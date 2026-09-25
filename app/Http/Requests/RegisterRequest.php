@@ -26,8 +26,21 @@ class RegisterRequest extends FormRequest
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')],
             'phone' => ['nullable', 'string', 'max:30'],
             'role' => ['required', Rule::in(['customer', 'farmer'])],
-            'stall_name' => ['nullable', 'string', 'max:255', 'required_if:role,farmer'],
-            'address' => ['nullable', 'string', 'max:500', 'required_if:role,farmer'],
+
+            'stall_name' => [
+                'nullable',
+                'string',
+                'max:255',
+                'required_if:role,farmer',
+            ],
+
+            'market_id' => [
+                'nullable',
+                'integer',
+                'exists:markets,id',
+                'required_if:role,farmer',
+            ],
+
             'password' => ['required', 'confirmed', Password::defaults()],
         ];
     }

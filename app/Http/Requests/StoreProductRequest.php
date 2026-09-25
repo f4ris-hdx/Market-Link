@@ -23,6 +23,7 @@ class StoreProductRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'category_id' => ['required', 'exists:categories,id'],
+            'market_id' => ['required', 'integer', 'exists:markets,id'],
             'unit' => ['required', 'string', 'max:20'],
             'price' => ['required', 'numeric', 'min:0.01'],
             'stock' => ['required', 'integer', 'min:0'],

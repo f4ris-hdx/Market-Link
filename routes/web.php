@@ -19,13 +19,6 @@ Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('login.store');
 
-    // Optional role-specific login entry points. They use the same authentication
-    // logic and database, but reject credentials belonging to another role.
-    Route::get('/admin/login', fn () => app(AuthController::class)->showLoginForRole('admin'))->name('admin.login');
-    Route::post('/admin/login', [AuthController::class, 'login'])->defaults('login_role', 'admin')->name('admin.login.store');
-    Route::get('/farmer/login', fn () => app(AuthController::class)->showLoginForRole('farmer'))->name('farmer.login');
-    Route::post('/farmer/login', [AuthController::class, 'login'])->defaults('login_role', 'farmer')->name('farmer.login.store');
-
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register'])->name('register.store');
 });

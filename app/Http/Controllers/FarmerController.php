@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreProductRequest;
-use App\Models\Farmer;
 use App\Models\Category;
+use App\Models\Farmer;
+use App\Models\Market;
 use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Http\RedirectResponse;
@@ -67,19 +68,31 @@ class FarmerController extends Controller
     public function create(): View|RedirectResponse
     {
         $farmer = $this->profile();
-        if ($redirect = $this->approvalRedirect($farmer)) return $redirect;
+        if ($redirect = $this->approvalRedirect($farmer)) {
+            return $redirect;
+        }
 
-        return view('farmer.product-form', ['farmer' => $farmer, 'categories' => Category::orderBy('name')->get()]);
+        return view('farmer.product-form', [
+            'farmer' => $farmer,
+            'categories' => Category::orderBy('name')->get(),
+            'markets' => Market::orderBy('name')->get(),
+            'selectedMarketId' => $farmer->market_id,
+        ]);
     }
 
     public function store(StoreProductRequest $request): RedirectResponse
     {
         $farmer = $this->profile();
-        if ($redirect = $this->approvalRedirect($farmer)) return $redirect;
+        if ($redirect = $this->approvalRedirect($farmer)) {
+            return $redirect;
+        }
 
-        $farmer->products()->create(
-            $request->safe()->only(['name', 'description', 'category_id', 'unit', 'price', 'stock', 'image'])
-        );
+        $data = $request->safe()->only(['name', 'description', 'category_id', 'unit', 'price', 'stock', 'image', 'market_id']);
+        $marketId = $data['market_id'];
+        unset($data['market_id']);
+
+        $product = $farmer->products()->create($data);
+        $product->markets()->sync([$marketId]);
 
         return redirect()->route('farmer.products')->with('status', 'Product added.');
     }
@@ -87,25 +100,42 @@ class FarmerController extends Controller
     public function edit(Product $product): View|RedirectResponse
     {
         $farmer = $this->profile();
-        if ($redirect = $this->approvalRedirect($farmer)) return $redirect;
+        if ($redirect = $this->approvalRedirect($farmer)) {
+            return $redirect;
+        }
 
         if ($product->farmer_id !== $farmer->id) {
             abort(403);
         }
 
-        return view('farmer.product-form', ['product' => $product, 'categories' => Category::orderBy('name')->get()]);
+        $product->load('markets');
+
+        return view('farmer.product-form', [
+            'farmer' => $farmer,
+            'product' => $product,
+            'categories' => Category::orderBy('name')->get(),
+            'markets' => Market::orderBy('name')->get(),
+            'selectedMarketId' => $product->markets->first()?->id ?? $farmer->market_id,
+        ]);
     }
 
     public function update(StoreProductRequest $request, Product $product): RedirectResponse
     {
         $farmer = $this->profile();
-        if ($redirect = $this->approvalRedirect($farmer)) return $redirect;
+        if ($redirect = $this->approvalRedirect($farmer)) {
+            return $redirect;
+        }
 
         if ($product->farmer_id !== $farmer->id) {
             abort(403);
         }
 
-        $product->update($request->safe()->only(['name', 'description', 'category_id', 'unit', 'price', 'stock', 'image']));
+        $data = $request->safe()->only(['name', 'description', 'category_id', 'unit', 'price', 'stock', 'image', 'market_id']);
+        $marketId = $data['market_id'];
+        unset($data['market_id']);
+
+        $product->update($data);
+        $product->markets()->sync([$marketId]);
 
         return redirect()->route('farmer.products')->with('status', 'Product updated.');
     }
@@ -113,7 +143,9 @@ class FarmerController extends Controller
     public function destroy(Product $product): RedirectResponse
     {
         $farmer = $this->profile();
-        if ($redirect = $this->approvalRedirect($farmer)) return $redirect;
+        if ($redirect = $this->approvalRedirect($farmer)) {
+            return $redirect;
+        }
 
         if ($product->farmer_id !== $farmer->id) {
             abort(403);
@@ -156,7 +188,6 @@ class FarmerController extends Controller
         return back()->with('status', "Order {$order->order_number} marked as {$status}.");
     }
 
-
     public function updateProfile(Request $request): RedirectResponse
     {
         $data = $request->validate([
@@ -169,6 +200,7 @@ class FarmerController extends Controller
         $farmer = $this->profile();
         $farmer->update($data);
         $farmer->user?->update(['name' => $data['owner_name']]);
+
         return back()->with('status', 'Farmer profile updated.');
     }
 

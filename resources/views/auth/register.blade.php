@@ -57,7 +57,7 @@
         @error('role')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
     </div>
 
-    <div class="row g-3 mb-3 farmer-registration-fields d-none" id="farmerRegistrationFields">
+    <div class="row g-3 mb-3 farmer-registration-fields d-block" id="farmerRegistrationFields">
         <div class="col-md-6">
             <label for="regStallName" class="form-label fw-semibold">Stall / business name</label>
             <div class="input-group auth-input-group">
@@ -67,12 +67,17 @@
             @error('stall_name')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
         </div>
         <div class="col-md-6">
-            <label for="regAddress" class="form-label fw-semibold">Business / pickup address</label>
+            <label for="regMarket" class="form-label fw-semibold">Main Market</label>
             <div class="input-group auth-input-group">
                 <span class="input-group-text"><i class="fa-solid fa-location-dot"></i></span>
-                <input type="text" class="form-control @error('address') is-invalid @enderror" id="regAddress" name="address" value="{{ old('address') }}" placeholder="Market Street, City" autocomplete="street-address">
+                <select class="form-select @error('market_id') is-invalid @enderror" id="regMarket" name="market_id">
+                    <option value="">Select your main market</option>
+                    @foreach($markets as $market)
+                        <option value="{{ $market->id }}" @selected(old('market_id') == $market->id)>{{ $market->name }} — {{ $market->location }}</option>
+                    @endforeach
+                </select>
             </div>
-            @error('address')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+            @error('market_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
         </div>
     </div>
 
@@ -114,15 +119,20 @@
     const customerRadio = document.getElementById('roleCustomer');
     const fields = document.getElementById('farmerRegistrationFields');
     const stall = document.getElementById('regStallName');
-    const address = document.getElementById('regAddress');
+    const market = document.getElementById('regMarket');
+
     function syncFarmerFields(){
         const active = !!(farmerRadio && farmerRadio.checked);
+
         if (fields) fields.classList.toggle('d-none', !active);
+
         if (stall) stall.required = active;
-        if (address) address.required = active;
+        if (market) market.required = active;
     }
+
     farmerRadio?.addEventListener('change', syncFarmerFields);
     customerRadio?.addEventListener('change', syncFarmerFields);
+
     syncFarmerFields();
 })();
 </script>

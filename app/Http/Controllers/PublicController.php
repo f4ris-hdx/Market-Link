@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Farmer;
 use App\Models\Market;
 use App\Models\Product;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -26,6 +27,7 @@ class PublicController extends Controller
             ->map(fn (Product $p) => [
                 'id' => $p->id,
                 'name' => $p->name,
+                'farmerId' => $p->farmer_id,
                 'category' => $p->category?->name ?? 'Other',
                 'farmer' => $p->farmer?->name ?? 'Local Farmer',
                 'price' => (float) $p->price,
@@ -71,7 +73,7 @@ class PublicController extends Controller
                 'farmers' => $farmers->count(),
                 'markets' => $markets->count(),
                 'products' => $products->count(),
-                'customers' => \App\Models\User::where('role', 'customer')->count(),
+                'customers' => User::where('role', 'customer')->count(),
             ],
         ];
     }

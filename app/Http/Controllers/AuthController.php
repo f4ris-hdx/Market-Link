@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Models\Farmer;
+use App\Models\Market;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,7 +17,9 @@ class AuthController extends Controller
 {
     public function showRegister(): View
     {
-        return view('auth.register');
+        $markets = Market::orderBy('name')->get();
+
+        return view('auth.register', compact('markets'));
     }
 
     public function register(RegisterRequest $request): RedirectResponse
@@ -34,11 +37,14 @@ class AuthController extends Controller
             ]);
 
             if ($user->isFarmer()) {
+                $market = Market::findOrFail($data['market_id']);
+
                 Farmer::create([
                     'user_id' => $user->id,
-                    'name' => $data['stall_name'] ?? $user->name,
+                    'name' => $data['stall_name'],
                     'owner_name' => $user->name,
-                    'location' => $data['address'] ?? 'Pending confirmation',
+                    'location' => $market->location,
+                    'market_id' => $market->id,
                     'status' => 'pending',
                     'rating' => 0,
                     'slots' => null,
@@ -69,24 +75,11 @@ class AuthController extends Controller
         return view('auth.login', ['loginRole' => null]);
     }
 
-    public function showLoginForRole(string $role): View
-    {
-        abort_unless(in_array($role, ['admin', 'farmer'], true), 404);
-
-        return view('auth.login', ['loginRole' => $role]);
-    }
-
     public function login(LoginRequest $request): RedirectResponse
     {
         $credentials = $request->safe()->only(['email', 'password']);
-        $expectedRole = $request->input('login_role') ?: $request->route('login_role');
         $user = User::where('email', $credentials['email'])->first();
 
-        if ($expectedRole && (!$user || $user->role !== $expectedRole)) {
-            return back()->withErrors([
-                'email' => 'These credentials are not for the selected portal.',
-            ])->onlyInput('email');
-        }
         if ($user && in_array($user->status ?? 'active', ['inactive', 'suspended'], true)) {
             return back()->withErrors(['email' => 'This account is currently inactive or suspended.'])->onlyInput('email');
         }

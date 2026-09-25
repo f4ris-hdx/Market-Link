@@ -4,7 +4,6 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class LoginRequest extends FormRequest
 {
@@ -23,7 +22,6 @@ class LoginRequest extends FormRequest
         return [
             'email' => ['required', 'string', 'email', 'max:255'],
             'password' => ['required', 'string'],
-            'login_role' => ['nullable', Rule::in(['customer', 'farmer', 'admin'])],
         ];
     }
 }

@@ -541,6 +541,8 @@ a { text-decoration: none; }
 
 /* ---------- Filters sidebar ---------- */
 .filter-card .form-label { font-weight: 700; color: var(--forest-green); font-size: 0.85rem; }
+.filter-card { min-width: 0; }
+.filter-card .form-select { width: 100%; max-width: 100%; min-width: 0; }
 .form-range::-webkit-slider-thumb {
     background: var(--fresh-green);
     box-shadow: 0 3px 8px rgba(45,106,79,0.4);

@@ -3,7 +3,7 @@
 @section('content')
 <div class="page-hero-sub d-flex justify-content-between align-items-center flex-wrap gap-3">
     <div><h1 class="h3 fw-bold">My Products</h1><p class="text-muted mb-0">Create, edit, remove and update stock for your own listings.</p></div>
-    @if($farmer->status === 'verified')<a class="btn btn-eco-primary" href="{{ route('farmer.products.create') }}"><i class="fa-solid fa-plus me-1"></i>Add Product</a>@endif
+    @if($farmer->status === 'verified')<a class="btn btn-eco-primary text-black" href="{{ route('farmer.products.create') }}"><i class="fa-solid fa-plus me-1 "></i>Add Product</a>@endif
 </div>
 @if($farmer->status !== 'verified')<div class="alert alert-warning mt-4"><i class="fa-solid fa-hourglass-half me-2"></i>Your farmer profile is awaiting administrator approval. Product publishing is disabled until verification.</div>@endif
 <div class="eco-card p-3 mt-4">

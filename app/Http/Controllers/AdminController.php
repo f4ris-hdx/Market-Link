@@ -31,6 +31,7 @@ class AdminController extends Controller
         ];
         $announcements = Announcement::orderByDesc('created_at')->get();
         $recentOrders = Order::with('user')->orderByDesc('placed_at')->limit(10)->get();
+
         return view('admin.dashboard', compact('metrics', 'announcements', 'recentOrders'));
     }
 
@@ -38,13 +39,18 @@ class AdminController extends Controller
     public function users(Request $request): View
     {
         $query = User::query()->orderByDesc('created_at');
-        if ($request->filled('role')) $query->where('role', $request->string('role')->toString());
-        if ($request->filled('status')) $query->where('status', $request->string('status')->toString());
+        if ($request->filled('role')) {
+            $query->where('role', $request->string('role')->toString());
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->string('status')->toString());
+        }
         if ($request->filled('search')) {
             $term = $request->string('search')->toString();
             $query->where(fn ($q) => $q->where('name', 'like', "%{$term}%")->orWhere('email', 'like', "%{$term}%"));
         }
         $users = $query->paginate(20)->withQueryString();
+
         return view('admin.users', compact('users'));
     }
 
@@ -68,6 +74,7 @@ class AdminController extends Controller
         if ($user->isFarmer()) {
             Farmer::create(['user_id' => $user->id, 'name' => $user->name, 'owner_name' => $user->name, 'location' => 'Pending confirmation', 'status' => 'pending']);
         }
+
         return redirect()->route('admin.users')->with('status', 'User created.');
     }
 
@@ -89,7 +96,11 @@ class AdminController extends Controller
         if ($user->is(auth()->user()) && ($data['status'] === 'inactive' || $data['role'] !== 'admin')) {
             return back()->withErrors(['user' => 'You cannot deactivate or demote your own administrator account.'])->withInput();
         }
-        if (blank($data['password'] ?? null)) unset($data['password']); else $data['password'] = Hash::make($data['password']);
+        if (blank($data['password'] ?? null)) {
+            unset($data['password']);
+        } else {
+            $data['password'] = Hash::make($data['password']);
+        }
         $oldRole = $user->role;
         $user->update($data);
 
@@ -122,6 +133,7 @@ class AdminController extends Controller
         }
 
         $user->update(['status' => $currentlyActive ? 'inactive' : 'active']);
+
         return back()->with('status', "{$user->name} is now {$user->status}.");
     }
 
@@ -138,6 +150,7 @@ class AdminController extends Controller
         // first instead of leaving a broken farmer-role login behind.
         $user->farmer?->delete();
         $user->delete();
+
         return back()->with('status', 'User and related farmer profile (when present) deleted.');
     }
 
@@ -145,13 +158,20 @@ class AdminController extends Controller
     public function farmers(Request $request): View
     {
         $query = Farmer::with(['user', 'market'])->withCount('products')->orderByDesc('created_at');
-        if ($request->filled('status')) $query->where('status', $request->string('status')->toString());
+        if ($request->filled('status')) {
+            $query->where('status', $request->string('status')->toString());
+        }
 
         $type = $request->string('type')->toString();
-        if ($type === 'registered') $query->where('is_demo', false);
-        if ($type === 'sample') $query->where('is_demo', true);
+        if ($type === 'registered') {
+            $query->where('is_demo', false);
+        }
+        if ($type === 'sample') {
+            $query->where('is_demo', true);
+        }
 
         $farmers = $query->get();
+
         return view('admin.farmers', compact('farmers', 'type'));
     }
 
@@ -159,6 +179,7 @@ class AdminController extends Controller
     {
         $users = User::where('role', 'farmer')->orderBy('name')->get();
         $markets = Market::orderBy('name')->get();
+
         return view('admin.farmer-form', compact('users', 'markets'));
     }
 
@@ -172,6 +193,7 @@ class AdminController extends Controller
         }
         $farmer = Farmer::create($data);
         $farmer->user?->update(['status' => $farmer->status === 'suspended' ? 'inactive' : 'active']);
+
         return redirect()->route('admin.farmers')->with('status', 'Farmer created.');
     }
 
@@ -179,6 +201,7 @@ class AdminController extends Controller
     {
         $users = User::where('role', 'farmer')->orderBy('name')->get();
         $markets = Market::orderBy('name')->get();
+
         return view('admin.farmer-form', compact('farmer', 'users', 'markets'));
     }
 
@@ -194,6 +217,7 @@ class AdminController extends Controller
         }
 
         $farmer->user?->update(['status' => $farmer->status === 'suspended' ? 'inactive' : 'active']);
+
         return redirect()->route('admin.farmers')->with('status', 'Farmer updated.');
     }
 
@@ -211,11 +235,12 @@ class AdminController extends Controller
             'status' => ['required', 'in:pending,verified,suspended'],
             'slots' => ['nullable', 'string', 'max:1000'],
         ]);
-        if (!empty($data['user_id'])) {
+        if (! empty($data['user_id'])) {
             $exists = Farmer::where('user_id', $data['user_id'])->when($farmer, fn ($q) => $q->where('id', '!=', $farmer->id))->exists();
             abort_if($exists, 422, 'That farmer user already has a farmer profile.');
             abort_unless(User::whereKey($data['user_id'])->where('role', 'farmer')->exists(), 422, 'Selected user must have the farmer role.');
         }
+
         return $data;
     }
 
@@ -223,6 +248,7 @@ class AdminController extends Controller
     {
         $farmer->update(['status' => 'verified']);
         $farmer->user?->update(['status' => 'active']);
+
         return back()->with('status', "{$farmer->name} verified.");
     }
 
@@ -230,6 +256,7 @@ class AdminController extends Controller
     {
         $farmer->update(['status' => 'suspended']);
         $farmer->user?->update(['status' => 'inactive']);
+
         return back()->with('status', "{$farmer->name} suspended.");
     }
 
@@ -237,6 +264,7 @@ class AdminController extends Controller
     {
         $farmer->user?->update(['role' => 'customer', 'status' => 'active']);
         $farmer->delete();
+
         return back()->with('status', 'Farmer profile deleted and any linked account was returned to customer access.');
     }
 
@@ -244,8 +272,11 @@ class AdminController extends Controller
     public function products(Request $request): View
     {
         $query = Product::query()->with(['farmer', 'category']);
-        if ($request->filled('search')) $query->where('name', 'like', '%'.$request->string('search')->toString().'%');
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%'.$request->string('search')->toString().'%');
+        }
         $products = $query->orderByDesc('created_at')->paginate(15)->withQueryString();
+
         return view('admin.products', compact('products'));
     }
 
@@ -253,13 +284,20 @@ class AdminController extends Controller
     {
         $farmers = Farmer::where('status', 'verified')->orderBy('name')->get();
         $categories = Category::orderBy('name')->get();
-        return view('admin.product-form', compact('farmers', 'categories'));
+        $markets = Market::orderBy('name')->get();
+
+        return view('admin.product-form', compact('farmers', 'categories', 'markets'));
     }
 
     public function storeProduct(Request $request): RedirectResponse
     {
         $data = $this->validateProduct($request);
-        Product::create($data);
+        $marketId = $data['market_id'];
+        unset($data['market_id']);
+
+        $product = Product::create($data);
+        $product->markets()->sync([$marketId]);
+
         return redirect()->route('admin.products')->with('status', 'Product created.');
     }
 
@@ -267,12 +305,22 @@ class AdminController extends Controller
     {
         $farmers = Farmer::where('status', 'verified')->orderBy('name')->get();
         $categories = Category::orderBy('name')->get();
-        return view('admin.product-form', compact('product', 'farmers', 'categories'));
+        $markets = Market::orderBy('name')->get();
+        $product->load('markets');
+        $selectedMarketId = $product->markets->first()?->id;
+
+        return view('admin.product-form', compact('product', 'farmers', 'categories', 'markets', 'selectedMarketId'));
     }
 
     public function updateProduct(Request $request, Product $product): RedirectResponse
     {
-        $product->update($this->validateProduct($request));
+        $data = $this->validateProduct($request);
+        $marketId = $data['market_id'];
+        unset($data['market_id']);
+
+        $product->update($data);
+        $product->markets()->sync([$marketId]);
+
         return redirect()->route('admin.products')->with('status', 'Product updated.');
     }
 
@@ -283,6 +331,7 @@ class AdminController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
             'category_id' => ['required', 'exists:categories,id'],
+            'market_id' => ['required', 'integer', 'exists:markets,id'],
             'unit' => ['required', 'string', 'max:50'],
             'price' => ['required', 'numeric', 'min:0'],
             'stock' => ['required', 'integer', 'min:0'],
@@ -298,6 +347,7 @@ class AdminController extends Controller
     public function destroyProduct(Product $product): RedirectResponse
     {
         $product->delete();
+
         return back()->with('status', 'Product deleted.');
     }
 
@@ -305,18 +355,21 @@ class AdminController extends Controller
     public function markets(): View
     {
         $markets = Market::withCount('farmers')->orderBy('name')->get();
+
         return view('admin.markets', compact('markets'));
     }
 
     public function storeMarket(Request $request): RedirectResponse
     {
         Market::create($this->validateMarket($request));
+
         return back()->with('status', 'Market created.');
     }
 
     public function updateMarket(Request $request, Market $market): RedirectResponse
     {
         $market->update($this->validateMarket($request));
+
         return back()->with('status', 'Market updated.');
     }
 
@@ -334,6 +387,7 @@ class AdminController extends Controller
     public function destroyMarket(Market $market): RedirectResponse
     {
         $market->delete();
+
         return back()->with('status', 'Market removed.');
     }
 
@@ -341,12 +395,14 @@ class AdminController extends Controller
     {
         $data = $request->validate(['title' => ['required', 'string', 'max:255'], 'message' => ['required', 'string', 'max:1000']]);
         Announcement::create($data);
+
         return redirect()->route('admin.dashboard')->with('status', 'Announcement published.');
     }
 
     public function destroyAnnouncement(Announcement $announcement): RedirectResponse
     {
         $announcement->delete();
+
         return back()->with('status', 'Announcement removed.');
     }
 }

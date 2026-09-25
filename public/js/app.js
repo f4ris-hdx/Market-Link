@@ -392,7 +392,7 @@ function applyProductFilters() {
 
     let filtered = state.products.filter(p => {
         const mCat = !cat || p.category === cat;
-        const mFarmer = !farmer || p.farmer === farmer;
+        const mFarmer = !farmer || String(p.farmerId ?? p.farmer) === String(farmer);
         const mPrice = p.price <= maxPrice;
         const mSearch = !search || (p.name + ' ' + p.farmer + ' ' + p.category).toLowerCase().includes(search);
         return mCat && mFarmer && mPrice && mSearch;
@@ -438,12 +438,15 @@ function initProducts() {
 
     const farmerSelect = document.getElementById('filterFarmer');
     if (farmerSelect) {
-        const farmers = [...new Set(state.products.map(p => p.farmer))].sort();
+        const farmers = new Map();
+        state.products.forEach(p => farmers.set(String(p.farmerId ?? p.farmer), { id: p.farmerId ?? p.farmer, name: p.farmer }));
         farmerSelect.innerHTML = '<option value="">All Farmers</option>' +
-            farmers.map(f => `<option value="${f}">${f}</option>`).join('');
+            [...farmers.values()].sort((a, b) => a.name.localeCompare(b.name)).map(f => `<option value="${f.id}">${f.name}</option>`).join('');
     }
     if (catFilter) { document.getElementById('filterCategory').value = catFilter; }
     if (qFilter) { const si = document.getElementById('productSearchInput'); if (si) si.value = qFilter; }
+    const farmerFilter = params.get('farmer_id');
+    if (farmerFilter && farmerSelect) farmerSelect.value = farmerFilter;
     applyProductFilters();
     if (qFilter && !catFilter) showToast('Showing results for your search', 'info');
 }
@@ -511,7 +514,7 @@ function renderFarmersDirectory() {
                     <span class="rating text-gold"><i class="fa-solid fa-star"></i> ${f.rating.toFixed(1)}</span>
                     <span class="badge bg-mint text-forest"><i class="fa-solid fa-circle-check me-1"></i>Verified</span></div>
                 <div class="d-flex gap-2">
-                    <button class="btn btn-eco-primary btn-sm flex-fill" onclick="location.href=(window.ML_URLS?.products || '/products')">View Produce</button>
+                    <a class="btn btn-eco-primary btn-sm flex-fill" href="${(window.ML_URLS?.products || '/products')}${f.id ? '?farmer_id=' + encodeURIComponent(f.id) : ''}">View Produce</a>
                     <button class="btn btn-eco-outline btn-sm" onclick="showToast('Message request sent to ${f.name}!', 'success')" title="Contact farmer"><i class="fa-solid fa-envelope"></i></button>
                 </div>
             </div></div>`).join('') : emptyStateHTML('No farmers matched your search.');

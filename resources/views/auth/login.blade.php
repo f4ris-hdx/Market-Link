@@ -1,21 +1,18 @@
 @extends('layouts.guest')
 
-@php($loginRole = $loginRole ?? null)
-
-@section('title', $loginRole === 'admin' ? 'Admin Sign In' : ($loginRole === 'farmer' ? 'Farmer Sign In' : 'Sign In'))
-@section('authHeading', $loginRole === 'admin' ? 'Admin sign in' : ($loginRole === 'farmer' ? 'Farmer sign in' : 'Welcome back'))
-@section('authSubtitle', $loginRole === 'admin' ? 'Access the MarketLink administration console.' : ($loginRole === 'farmer' ? 'Access your MarketLink farmer workspace.' : 'Sign in to manage your MarketLink account and orders.'))
+@section('title', 'Sign In')
+@section('authHeading', 'Welcome back')
+@section('authSubtitle', 'Sign in to manage your MarketLink account and orders.')
 
 @section('content')
-<form method="POST" action="{{ $loginRole === 'admin' ? route('admin.login.store') : ($loginRole === 'farmer' ? route('farmer.login.store') : route('login.store')) }}" class="auth-form" novalidate>
+<form method="POST" action="{{ route('login.store') }}" class="auth-form" novalidate>
     @csrf
-    @if($loginRole)<input type="hidden" name="login_role" value="{{ $loginRole }}">@endif
 
     <div class="auth-role-banner mb-4">
-        <div class="icon-chip"><i class="fa-solid {{ $loginRole === 'admin' ? 'fa-user-shield' : ($loginRole === 'farmer' ? 'fa-tractor' : 'fa-user') }}"></i></div>
+        <div class="icon-chip"><i class="fa-solid fa-user"></i></div>
         <div>
-            <strong>{{ $loginRole === 'admin' ? 'Administrator Portal' : ($loginRole === 'farmer' ? 'Farmer Portal' : 'MarketLink Customer Portal') }}</strong>
-            <div class="small text-muted">{{ $loginRole === 'admin' ? 'Management, moderation and reporting' : ($loginRole === 'farmer' ? 'Inventory, orders and pickup management' : 'Shopping, favorites and pre-orders') }}</div>
+            <strong>MarketLink account</strong>
+            <div class="small text-muted">Access your dashboard and account features</div>
         </div>
     </div>
 
@@ -49,15 +46,7 @@
 
 @section('authFooter')
 <div class="text-center small">
-    @if($loginRole === 'admin')
-        <span class="text-muted">Not an administrator?</span> <a href="{{ route('login') }}" class="fw-bold text-fresh">Use standard sign in</a>
-    @elseif($loginRole === 'farmer')
-        <span class="text-muted">Need a farmer account?</span> <a href="{{ route('register') }}" class="fw-bold text-fresh">Create one</a>
-    @else
-        <span class="text-muted">New to MarketLink?</span> <a href="{{ route('register') }}" class="fw-bold text-fresh">Create an account</a>
-    @endif
-</div>
-<div class="text-center small mt-2">
-    @if(!$loginRole)<a href="{{ route('farmer.login') }}" class="me-3 text-fresh">Farmer sign in</a><a href="{{ route('admin.login') }}" class="text-fresh">Admin sign in</a>@endif
+    <span class="text-muted">New to MarketLink?</span>
+    <a href="{{ route('register') }}" class="fw-bold text-fresh">Create an account</a>
 </div>
 @endsection
