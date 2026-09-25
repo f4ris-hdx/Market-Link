@@ -1,0 +1,33 @@
+MARKETLINK LOCAL SETUP (NO SQL DUMP)
+====================================
+
+1) Create an empty MySQL/MariaDB database named: marketlink
+
+2) From this project folder, Windows CMD:
+
+composer install && copy .env.example .env && php artisan key:generate && php artisan optimize:clear && php artisan migrate:fresh --seed && npm install && npm run build && php artisan serve
+
+3) IMPORTANT: migrate:fresh deletes existing application data. After the first clean install, use this normal command instead:
+
+php artisan optimize:clear && php artisan migrate && php artisan serve
+
+4) URLs
+Customer: http://127.0.0.1:8000/login
+Farmer:   http://127.0.0.1:8000/farmer/login
+Admin:    http://127.0.0.1:8000/admin/login
+
+5) Seeded accounts
+Admin:    admin@marketlink.test / password
+Farmer:   farmer@marketlink.test / password
+Customer: customer@marketlink.test / password
+
+6) If Blade/view errors appear after replacing the project files:
+
+php artisan optimize:clear
+php artisan view:clear
+php artisan route:clear
+php artisan config:clear
+
+Then restart:
+
+php artisan serve
