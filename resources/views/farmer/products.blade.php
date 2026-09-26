@@ -20,8 +20,8 @@
                         <td>{{ $product->category?->name ?? 'Uncategorized' }}</td>
                         <td>${{ number_format($product->price, 2) }} / {{ $product->unit }}</td>
                         <td>{{ $product->stock }}</td>
-                        <td><span class="badge {{ $product->stock > 0 ? 'bg-mint text-forest' : 'bg-danger text-white' }}">{{ $product->stock > 0 ? 'Available' : 'Sold Out' }}</span></td>
-                        <td><div class="d-flex gap-1"><a class="btn btn-sm btn-outline-secondary" href="{{ route('farmer.products.edit', $product) }}" title="Edit"><i class="fa-solid fa-pen"></i></a><form method="POST" action="{{ route('farmer.products.destroy', $product) }}" onsubmit="return confirm('Delete this product?')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger" type="submit" title="Delete"><i class="fa-solid fa-trash"></i></button></form></div></td>
+                        <td><span class="badge {{ $product->status === 'approved' && $product->stock > 0 ? 'bg-mint text-forest' : 'bg-secondary text-white' }}">{{ $product->status === 'approved' ? ($product->stock > 0 ? 'Visible' : 'Sold Out') : 'Hidden' }}</span></td>
+                        <td><div class="d-flex gap-1"><a class="btn btn-sm btn-outline-secondary" href="{{ route('farmer.products.edit', $product) }}" title="Edit"><i class="fa-solid fa-pen"></i></a><form method="POST" action="{{ route('farmer.products.visibility', $product) }}">@csrf<button class="btn btn-sm {{ $product->status === 'approved' ? 'btn-outline-warning' : 'btn-outline-success' }}" type="submit" title="{{ $product->status === 'approved' ? 'Hide from customers' : 'Show to customers' }}"><i class="fa-solid {{ $product->status === 'approved' ? 'fa-eye-slash' : 'fa-eye' }}"></i></button></form><form method="POST" action="{{ route('farmer.products.destroy', $product) }}" onsubmit="return confirm('Delete this product?')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger" type="submit" title="Delete"><i class="fa-solid fa-trash"></i></button></form></div></td>
                     </tr>
                 @endforeach
                 </tbody>

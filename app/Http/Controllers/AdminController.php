@@ -8,6 +8,7 @@ use App\Models\Farmer;
 use App\Models\Market;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\Review;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -28,11 +29,18 @@ class AdminController extends Controller
             'orders' => Order::count(),
             'revenue' => (float) Order::whereNotIn('status', ['Cancelled', 'Rejected'])->sum('total'),
             'markets' => Market::count(),
+            'reviews' => Review::where('status', 'published')->count(),
+            'averageRating' => (float) (Review::where('status', 'published')->avg('rating') ?? 0),
         ];
         $announcements = Announcement::orderByDesc('created_at')->get();
         $recentOrders = Order::with('user')->orderByDesc('placed_at')->limit(10)->get();
+        $recentReviews = Review::with(['user', 'product', 'farmer'])
+            ->where('status', 'published')
+            ->latest()
+            ->limit(12)
+            ->get();
 
-        return view('admin.dashboard', compact('metrics', 'announcements', 'recentOrders'));
+        return view('admin.dashboard', compact('metrics', 'announcements', 'recentOrders', 'recentReviews'));
     }
 
     // -------------------- Users CRUD --------------------
@@ -375,13 +383,20 @@ class AdminController extends Controller
 
     private function validateMarket(Request $request): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'location' => ['required', 'string', 'max:255'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'days' => ['required', 'string', 'max:255'],
             'farmers_count' => ['nullable', 'integer', 'min:0'],
             'distance' => ['nullable', 'numeric', 'min:0'],
         ]);
+
+        $data['farmers_count'] = $data['farmers_count'] ?? 0;
+        $data['distance'] = $data['distance'] ?? 0;
+
+        return $data;
     }
 
     public function destroyMarket(Market $market): RedirectResponse

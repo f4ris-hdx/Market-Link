@@ -34,4 +34,14 @@ class Farmer extends Model
     {
         return $this->hasMany(Product::class);
     }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    public function favoriteRecords(): HasMany
+    {
+        return $this->hasMany(FavoriteFarmer::class);
+    }
 }

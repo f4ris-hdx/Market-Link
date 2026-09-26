@@ -37,7 +37,6 @@ const IMG = {
 };
 
 let sampleProducts = [
-    // Vegetables
     { id: 101, name: 'Organic Heirloom Tomatoes', category: 'Vegetables', farmer: 'Green Valley Farm', price: 4.50, unit: 'lb', stock: 25, rating: 4.9, image: IMG.tomatoes },
     { id: 102, name: 'Rainbow Carrots Bundle', category: 'Vegetables', farmer: 'Willow Creek Produce', price: 3.20, unit: 'bunch', stock: 30, rating: 4.8, image: IMG.carrots },
     { id: 103, name: 'Curly Kale Greens', category: 'Vegetables', farmer: 'Green Valley Farm', price: 3.00, unit: 'bunch', stock: 22, rating: 4.7, image: IMG.vegmarket },
@@ -85,6 +84,7 @@ let sampleMarkets = [
     { name: 'Harvest Square Hub', location: 'Old Town Square', days: 'Saturdays, 9:00 AM - 1:00 PM', farmersCount: 16, distance: 2.4 },
     { name: 'Summer Nights Bazaar', location: 'Harbor Green', days: 'Thursdays, 5:00 PM - 9:00 PM', farmersCount: 6, distance: 6.4 }
 ];
+let customerCoordinates = null;
 
 /* ---------- Farmers (14) ---------- */
 let sampleFarmers = [
@@ -386,6 +386,7 @@ function setCatFilter(cat) { const el = document.getElementById('filterCategory'
 function applyProductFilters() {
     const cat = document.getElementById('filterCategory') ? document.getElementById('filterCategory').value : '';
     const farmer = document.getElementById('filterFarmer') ? document.getElementById('filterFarmer').value : '';
+    const market = document.getElementById('filterMarket') ? document.getElementById('filterMarket').value : '';
     const maxPrice = document.getElementById('filterPriceRange') ? parseFloat(document.getElementById('filterPriceRange').value) : 30;
     const sort = document.getElementById('sortProductsSelect') ? document.getElementById('sortProductsSelect').value : 'popular';
     const search = (document.getElementById('productSearchInput') || { value: '' }).value.trim().toLowerCase();
@@ -393,9 +394,10 @@ function applyProductFilters() {
     let filtered = state.products.filter(p => {
         const mCat = !cat || p.category === cat;
         const mFarmer = !farmer || String(p.farmerId ?? p.farmer) === String(farmer);
+        const mMarket = !market || (Array.isArray(p.marketIds) && p.marketIds.map(String).includes(String(market)));
         const mPrice = p.price <= maxPrice;
         const mSearch = !search || (p.name + ' ' + p.farmer + ' ' + p.category).toLowerCase().includes(search);
-        return mCat && mFarmer && mPrice && mSearch;
+        return mCat && mFarmer && mMarket && mPrice && mSearch;
     });
     if (sort === 'low') filtered.sort((a, b) => a.price - b.price);
     else if (sort === 'high') filtered.sort((a, b) => b.price - a.price);
@@ -414,6 +416,7 @@ function updatePriceLabel(val) { const el = document.getElementById('priceValueL
 function resetFilters() {
     document.getElementById('filterCategory').value = '';
     document.getElementById('filterFarmer').value = '';
+    if (document.getElementById('filterMarket')) document.getElementById('filterMarket').value = '';
     document.getElementById('filterPriceRange').value = 30;
     document.getElementById('productSearchInput').value = '';
     updatePriceLabel(30);
@@ -435,6 +438,7 @@ function initProducts() {
     const params = new URLSearchParams(window.location.search);
     const catFilter = params.get('cat');
     const qFilter = params.get('q');
+    const marketFilter = params.get('market_id');
 
     const farmerSelect = document.getElementById('filterFarmer');
     if (farmerSelect) {
@@ -442,6 +446,11 @@ function initProducts() {
         state.products.forEach(p => farmers.set(String(p.farmerId ?? p.farmer), { id: p.farmerId ?? p.farmer, name: p.farmer }));
         farmerSelect.innerHTML = '<option value="">All Farmers</option>' +
             [...farmers.values()].sort((a, b) => a.name.localeCompare(b.name)).map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+    }
+    const marketSelect = document.getElementById('filterMarket');
+    if (marketSelect) {
+        marketSelect.innerHTML = '<option value="">All Markets</option>' + sampleMarkets.slice().sort((a, b) => a.name.localeCompare(b.name)).map(market => `<option value="${market.id}">${market.name}</option>`).join('');
+        if (marketFilter) marketSelect.value = marketFilter;
     }
     if (catFilter) { document.getElementById('filterCategory').value = catFilter; }
     if (qFilter) { const si = document.getElementById('productSearchInput'); if (si) si.value = qFilter; }
@@ -455,15 +464,16 @@ function initProducts() {
    MARKETS & FARMERS PAGES
    ========================================================== */
 function marketCardHTML(m) {
+    const distance = typeof m.distanceComputed === 'number' ? m.distanceComputed : (!customerCoordinates ? Number(m.distance || 0) : null);
     return `<div class="col-md-4">
         <div class="eco-card p-4 h-100">
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <div class="icon-chip"><i class="fa-solid fa-store"></i></div>
                 <span class="badge bg-mint text-forest">${m.farmersCount} Vendors</span></div>
             <h5 class="fw-bold mb-1 mt-2">${m.name}</h5>
-            <p class="text-muted small mb-2"><i class="fa-solid fa-location-dot me-1 text-fresh"></i>${m.location} · ${milesText(m.distance)}</p>
+            <p class="text-muted small mb-2"><i class="fa-solid fa-location-dot me-1 text-fresh"></i>${m.location}${distance > 0 ? ` · ${milesText(distance)}` : ''}</p>
             <p class="fw-semibold small text-dark mb-4"><i class="fa-regular fa-calendar me-1 text-warning"></i>${m.days}</p>
-            <button class="btn btn-eco-outline w-100 mt-auto" onclick="location.href=(window.ML_URLS?.farmers || '/farmers')"><i class="fa-solid fa-tractor me-1"></i>Farmers at this Market</button>
+            <div class="d-flex gap-2 mt-auto"><a class="btn btn-eco-outline flex-fill" href="${(window.ML_URLS?.farmers || '/farmers')}?market_id=${encodeURIComponent(m.id)}"><i class="fa-solid fa-tractor me-1"></i>Farmers</a><a class="btn btn-eco-primary flex-fill" href="${(window.ML_URLS?.products || '/products')}?market_id=${encodeURIComponent(m.id)}"><i class="fa-solid fa-boxes-stacked me-1"></i>Products</a></div>
         </div></div>`;
 }
 
@@ -474,9 +484,15 @@ function renderMarkets() {
     const sortBy = document.getElementById('marketSortSelect') ? document.getElementById('marketSortSelect').value : 'name';
 
     let list = [...sampleMarkets];
+    if (!customerCoordinates && ML_BACKEND.user?.latitude && ML_BACKEND.user?.longitude) {
+        customerCoordinates = { latitude: Number(ML_BACKEND.user.latitude), longitude: Number(ML_BACKEND.user.longitude) };
+    }
     if (search) list = list.filter(m => (m.name + ' ' + m.location + ' ' + m.days).toLowerCase().includes(search));
+    if (customerCoordinates) {
+        list = list.map(market => ({ ...market, distanceComputed: market.latitude && market.longitude ? distanceMiles(customerCoordinates.latitude, customerCoordinates.longitude, market.latitude, market.longitude) : null }));
+    }
     if (sortBy === 'farmers') list.sort((a, b) => b.farmersCount - a.farmersCount);
-    else if (sortBy === 'near') list.sort((a, b) => a.distance - b.distance);
+    else if (sortBy === 'near') list.sort((a, b) => (a.distanceComputed ?? Number.POSITIVE_INFINITY) - (b.distanceComputed ?? Number.POSITIVE_INFINITY));
     else list.sort((a, b) => a.name.localeCompare(b.name));
 
     if (homeContainer) homeContainer.innerHTML = list.slice(0, 3).map(m => `
@@ -497,10 +513,99 @@ function renderMarkets() {
 
 function initMarkets() { renderMarkets(); }
 
+function distanceMiles(latitudeA, longitudeA, latitudeB, longitudeB) {
+    const earthRadiusMiles = 3958.8;
+    const radians = value => value * Math.PI / 180;
+    const latitudeDelta = radians(Number(latitudeB) - Number(latitudeA));
+    const longitudeDelta = radians(Number(longitudeB) - Number(longitudeA));
+    const a = Math.sin(latitudeDelta / 2) ** 2 + Math.cos(radians(latitudeA)) * Math.cos(radians(latitudeB)) * Math.sin(longitudeDelta / 2) ** 2;
+    return earthRadiusMiles * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function findNearbyMarkets() {
+    if (!navigator.geolocation) {
+        showToast('Your browser does not support location services.', 'error');
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(position => {
+        customerCoordinates = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+        const sort = document.getElementById('marketSortSelect');
+        if (sort) sort.value = 'near';
+        renderMarkets();
+        showToast('Markets sorted by distance from you.', 'success');
+    }, error => {
+        const messages = { 1: 'Location access was denied. Allow permission for this site in browser settings.', 2: 'Your device could not determine its location. You can select a point on the map manually.', 3: 'Location lookup timed out. You can select a point on the map manually.' };
+        showToast(messages[error.code] || 'Location access is unavailable. You can select a point on the map manually.', 'error');
+    }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 });
+}
+
+function useCustomerLocation() {
+    if (!navigator.geolocation) {
+        showToast('Your browser does not support location services.', 'error');
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(position => {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+        const latitudeField = document.getElementById('customerLatitude');
+        const longitudeField = document.getElementById('customerLongitude');
+        if (latitudeField) latitudeField.value = latitude.toFixed(7);
+        if (longitudeField) longitudeField.value = longitude.toFixed(7);
+        const locationField = document.getElementById('customerLocation');
+        if (locationField) locationField.placeholder = 'Finding your address...';
+        fetch((window.ML_MAP_REVERSE_URL || 'https://nominatim.openstreetmap.org/reverse') + '?format=jsonv2&lat=' + encodeURIComponent(latitude) + '&lon=' + encodeURIComponent(longitude) + '&zoom=18&addressdetails=1', { headers: { Accept: 'application/json' } })
+            .then(response => response.ok ? response.json() : Promise.reject(new Error('Address lookup failed.')))
+            .then(result => { if (locationField && result.display_name) locationField.value = result.display_name; if (locationField) locationField.placeholder = 'Enter your area or address'; })
+            .catch(() => { if (locationField) locationField.placeholder = 'Enter your area or address'; });
+        showToast('Your location was captured. Save your profile to use it for nearby markets.', 'success');
+    }, error => {
+        const messages = { 1: 'Location access was denied. Allow permission for this site in browser settings.', 2: 'Your device could not determine its location. You can select a point on the map manually.', 3: 'Location lookup timed out. You can select a point on the map manually.' };
+        showToast(messages[error.code] || 'Location access is unavailable. You can select a point on the map manually.', 'error');
+    }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 });
+}
+
+function initCustomerLocationMap() {
+    const container = document.getElementById('customerLocationMap');
+    if (!container || typeof L === 'undefined') return;
+    if (container.dataset.initialized === 'true') {
+        window.setTimeout(() => container._marketMap?.invalidateSize(), 100);
+        return;
+    }
+    container.dataset.initialized = 'true';
+
+    const latitudeField = document.getElementById('customerLatitude');
+    const longitudeField = document.getElementById('customerLongitude');
+    const latitude = parseFloat(latitudeField?.value || 30.3753);
+    const longitude = parseFloat(longitudeField?.value || 69.3451);
+    const hasSavedLocation = Boolean(latitudeField?.value && longitudeField?.value);
+    const map = L.map(container).setView([latitude, longitude], hasSavedLocation ? 14 : 5);
+    container._marketMap = map;
+    L.tileLayer(window.ML_MAP_TILE_URL || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: window.ML_MAP_ATTRIBUTION || '&copy; OpenStreetMap contributors', maxZoom: 19 }).addTo(map);
+    let marker = hasSavedLocation ? L.marker([latitude, longitude]).addTo(map) : null;
+
+    map.on('click', function (event) {
+        const coordinates = event.latlng;
+        if (latitudeField) latitudeField.value = coordinates.lat.toFixed(7);
+        if (longitudeField) longitudeField.value = coordinates.lng.toFixed(7);
+        if (marker) marker.setLatLng(coordinates); else marker = L.marker(coordinates).addTo(map);
+
+        const locationField = document.getElementById('customerLocation');
+        if (locationField) locationField.placeholder = 'Finding address...';
+        fetch((window.ML_MAP_REVERSE_URL || 'https://nominatim.openstreetmap.org/reverse') + '?format=jsonv2&lat=' + encodeURIComponent(coordinates.lat) + '&lon=' + encodeURIComponent(coordinates.lng) + '&zoom=18&addressdetails=1', { headers: { Accept: 'application/json' } })
+            .then(response => response.ok ? response.json() : Promise.reject(new Error('Address lookup failed.')))
+            .then(result => { if (locationField && result.display_name) locationField.value = result.display_name; if (locationField) locationField.placeholder = 'Enter your area or address'; })
+            .catch(() => { if (locationField) locationField.placeholder = 'Enter your area or address'; });
+    });
+}
+
 function renderFarmersDirectory() {
     const container = document.getElementById('farmersDirectoryGrid'); if (!container) return;
     const search = (document.getElementById('farmerSearchInput') || { value: '' }).value.trim().toLowerCase();
     let list = sampleFarmers;
+    const marketFilter = new URLSearchParams(window.location.search).get('market_id');
+    if (marketFilter) list = list.filter(f => String(f.marketId) === String(marketFilter));
     if (search) list = list.filter(f => (f.name + ' ' + f.specialty + ' ' + f.location).toLowerCase().includes(search));
 
     container.innerHTML = list.length ? list.map(f => `
@@ -515,7 +620,7 @@ function renderFarmersDirectory() {
                     <span class="badge bg-mint text-forest"><i class="fa-solid fa-circle-check me-1"></i>Verified</span></div>
                 <div class="d-flex gap-2">
                     <a class="btn btn-eco-primary btn-sm flex-fill" href="${(window.ML_URLS?.products || '/products')}${f.id ? '?farmer_id=' + encodeURIComponent(f.id) : ''}">View Produce</a>
-                    <button class="btn btn-eco-outline btn-sm" onclick="showToast('Message request sent to ${f.name}!', 'success')" title="Contact farmer"><i class="fa-solid fa-envelope"></i></button>
+                    <button class="btn btn-eco-outline btn-sm" onclick="toggleFarmerFavorite(${f.id}, this)" title="Save farmer"><i class="fa-regular fa-heart"></i></button>
                 </div>
             </div></div>`).join('') : emptyStateHTML('No farmers matched your search.');
 
@@ -604,21 +709,39 @@ async function toggleFavorite(prodId) {
     if(!ML_BACKEND.authenticated){window.location.href=ML_URLS.login;return;}
     try{const payload=await mlPost(`${ML_URLS.favorites}/${prodId}`,{});const id=Number(prodId),idx=state.favorites.indexOf(id);if(payload.favorite&&idx===-1)state.favorites.push(id);if(!payload.favorite&&idx>-1)state.favorites.splice(idx,1);saveState();if(document.getElementById('featuredProductsGrid'))renderHomeFeatured();if(document.getElementById('mainProductsGrid'))applyProductFilters();const favPanel=document.querySelector('#custTabFavorites'),favGrid=document.getElementById('customerFavoritesGrid');if(favGrid&&favPanel&&!favPanel.classList.contains('d-none'))renderCustomerFavorites();showToast(payload.favorite?'Saved to favorites.':'Removed from favorites.','success');}catch(e){showToast(e.message,'error');}
 }
+
+async function toggleFarmerFavorite(farmerId, button) {
+    if (!ML_BACKEND.authenticated) {
+        window.location.href = ML_URLS.login;
+        return;
+    }
+
+    try {
+        const payload = await mlPost(`/farmers/${farmerId}/favorite`, {});
+        button.classList.toggle('active', payload.favorite);
+        button.innerHTML = `<i class="fa-${payload.favorite ? 'solid' : 'regular'} fa-heart"></i>`;
+        showToast(payload.favorite ? 'Farmer saved to favorites.' : 'Farmer removed from favorites.', 'success');
+    } catch (error) {
+        showToast(error.message, 'error');
+    }
+}
 /* ==========================================================
    CUSTOMER DASHBOARD
    ========================================================== */
 function switchCustomerTab(tabName) {
     document.querySelectorAll('.customer-tab-content').forEach(c => c.classList.add('d-none'));
     document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-    const els = { orders: 'custTabOrders', favorites: 'custTabFavorites', profile: 'custTabProfile' };
+    const els = { orders: 'custTabOrders', favorites: 'custTabFavorites', reviews: 'custTabReviews', profile: 'custTabProfile' };
     const panel = document.getElementById(els[tabName]); if (panel) panel.classList.remove('d-none');
     const link = document.querySelector(`.sidebar-link[data-tab="${tabName}"]`); if (link) link.classList.add('active');
+    if (tabName === 'profile') window.setTimeout(initCustomerLocationMap, 100);
 }
 
 function initDashboard() {
     renderCustomerStats();
     renderCustomerOrders();
     renderCustomerFavorites();
+    renderCustomerReviews();
     switchCustomerTab('orders');
 }
 
@@ -649,14 +772,73 @@ function renderCustomerOrders() {
             <div class="d-flex justify-content-between align-items-center pt-2 border-top flex-wrap gap-2">
                 <span class="fw-bold text-forest">Total: ${fmtMoney(ord.total)} <small class="text-muted fw-normal">(pay at pickup)</small></span>
                 <div class="d-flex gap-2">
-                    ${ord.status === 'Placed' ? `<button class="btn btn-sm btn-eco-outline" onclick="showToast('Order modification requested!', 'info')">Modify</button>` : ''}
-                    ${ord.status !== 'Picked Up' ? `<button class="btn btn-sm btn-outline-danger" onclick="showToast('Cancellation request submitted!', 'info')">Cancel</button>` : ''}
+                    ${['Placed', 'Accepted'].includes(ord.status) ? `<button class="btn btn-sm btn-eco-outline" onclick="modifyCustomerOrder(${ord.orderId})">Modify pickup</button>` : ''}
+                    ${['Placed', 'Accepted', 'Ready'].includes(ord.status) ? `<button class="btn btn-sm btn-outline-danger" onclick="cancelCustomerOrder(${ord.orderId})">Cancel</button>` : ''}
+                    ${['Accepted', 'Ready'].includes(ord.status) ? `<button class="btn btn-sm btn-eco-primary" onclick="markCustomerOrderPickedUp(${ord.orderId})">Picked up</button>` : ''}
                 </div></div></div>`).join('');
+}
+
+async function modifyCustomerOrder(orderId) {
+    const slot = window.prompt('Enter the new pickup time slot:', '09:30 AM - 11:00 AM');
+    if (!slot) return;
+    const pickupName = window.prompt('Enter the pickup name:', '') || '';
+    if (!pickupName) return;
+    const pickupPhone = window.prompt('Enter the pickup phone number (optional):', '') || '';
+
+    try {
+        await mlPost(`/orders/${orderId}/modify`, { pickup_name: pickupName, pickup_phone: pickupPhone, slot });
+        showToast('Your pickup details were updated.', 'success');
+        window.location.reload();
+    } catch (error) {
+        showToast(error.message, 'error');
+    }
+}
+
+async function cancelCustomerOrder(orderId) {
+    if (!window.confirm('Cancel this order? The reserved stock will be returned.')) return;
+
+    try {
+        await mlPost(`/orders/${orderId}/cancel`, {});
+        showToast('Your order was cancelled.', 'success');
+        window.location.reload();
+    } catch (error) {
+        showToast(error.message, 'error');
+    }
+}
+
+async function markCustomerOrderPickedUp(orderId) {
+    if (!window.confirm('Confirm that you received this order?')) return;
+
+    try {
+        await mlPost(`/orders/${orderId}/picked-up`, {});
+        showToast('Your order was marked as picked up. You can now leave a review.', 'success');
+        window.location.reload();
+    } catch (error) {
+        showToast(error.message, 'error');
+    }
 }
 
 function renderCustomerFavorites() {
     const favProducts = state.products.filter(p => state.favorites.includes(p.id));
     renderProductsGrid(favProducts, 'customerFavoritesGrid');
+}
+
+function renderCustomerReviews() {
+    const farmersBox = document.getElementById('customerFavoriteFarmers');
+    const panel = document.getElementById('customerReviewsPanel');
+    if (!farmersBox || !panel) return;
+
+    const favoriteFarmers = ML_BACKEND.favoriteFarmers || [];
+    farmersBox.innerHTML = `<h5 class="fw-bold mb-2"><i class="fa-solid fa-tractor text-fresh me-2"></i>Favorite farmers</h5>` + (favoriteFarmers.length
+        ? favoriteFarmers.map(farmer => `<div class="d-flex justify-content-between align-items-center border-bottom py-2 gap-2"><div><strong>${escapeHTML(farmer.name)}</strong><div class="small text-muted">${farmer.reviewsCount} customer rating${farmer.reviewsCount === 1 ? '' : 's'}${farmer.market ? ` · ${escapeHTML(farmer.market)}` : ''}</div></div><form method="POST" action="/farmers/${farmer.id}/favorite"><input type="hidden" name="_token" value="${mlCsrf()}"><button class="btn btn-sm btn-outline-danger" title="Remove favorite"><i class="fa-solid fa-heart"></i></button></form></div>`).join('')
+        : '<p class="small text-muted mb-0">You have not saved a farmer yet. Use the heart on a farmer card.</p>');
+
+    const products = ML_BACKEND.reviewableProducts || [];
+    const farmers = ML_BACKEND.reviewableFarmers || [];
+    const ratingOptions = selected => [5, 4, 3, 2, 1].map(rating => `<option value="${rating}" ${Number(selected || 5) === rating ? 'selected' : ''}>${rating} star${rating === 1 ? '' : 's'}</option>`).join('');
+    const productForms = products.map(product => `<div class="col-lg-6"><div class="border rounded-3 p-3 h-100"><div class="d-flex justify-content-between gap-2 mb-2"><div><strong>${escapeHTML(product.name)}</strong><div class="small text-muted">${escapeHTML(product.farmer || 'MarketLink farmer')}</div></div><span class="rating"><i class="fa-solid fa-star"></i> ${Number(product.rating || 0).toFixed(1)}</span></div><form method="POST" action="/reviews/products/${product.id}"><input type="hidden" name="_token" value="${mlCsrf()}"><div class="row g-2"><div class="col-4"><label class="form-label small fw-semibold">Rating</label><select class="form-select form-select-sm" name="rating" required>${ratingOptions(product.review?.rating)}</select></div><div class="col-8"><label class="form-label small fw-semibold">Review</label><input class="form-control form-control-sm" name="review" value="${escapeHTML(product.review?.review || '')}" maxlength="2000" placeholder="What did you think?"></div></div><button class="btn btn-eco-primary btn-sm mt-2" type="submit"><i class="fa-solid fa-paper-plane me-1"></i>${product.review ? 'Update review' : 'Publish review'}</button></form></div></div>`).join('');
+    const farmerForms = farmers.map(farmer => `<div class="col-lg-6"><div class="border rounded-3 p-3 h-100"><div class="d-flex justify-content-between gap-2 mb-2"><div><strong>${escapeHTML(farmer.name)}</strong><div class="small text-muted">${escapeHTML(farmer.market || 'MarketLink farmer')}</div></div><span class="rating"><i class="fa-solid fa-star"></i> ${Number(farmer.rating || 0).toFixed(1)}</span></div><form method="POST" action="/reviews/farmers/${farmer.id}"><input type="hidden" name="_token" value="${mlCsrf()}"><div class="row g-2"><div class="col-4"><label class="form-label small fw-semibold">Rating</label><select class="form-select form-select-sm" name="rating" required>${ratingOptions(farmer.review?.rating)}</select></div><div class="col-8"><label class="form-label small fw-semibold">Review</label><input class="form-control form-control-sm" name="review" value="${escapeHTML(farmer.review?.review || '')}" maxlength="2000" placeholder="Share your experience"></div></div><button class="btn btn-eco-primary btn-sm mt-2" type="submit"><i class="fa-solid fa-paper-plane me-1"></i>${farmer.review ? 'Update review' : 'Publish review'}</button></form></div></div>`).join('');
+    panel.innerHTML = `<h5 class="fw-bold mb-3">Review products</h5><div class="row g-3 mb-4">${productForms || '<p class="small text-muted">No products are available to review right now.</p>'}</div><h5 class="fw-bold mb-3">Review farmers</h5><div class="row g-3">${farmerForms || '<p class="small text-muted">No verified farmers are available to review right now.</p>'}</div>`;
 }
 
 /* ==========================================================
@@ -814,25 +996,37 @@ function toggleAIChat() {
     el.style.display = el.style.display === 'flex' ? 'none' : 'flex';
     const body = document.getElementById('aiChatMessages'); if (body) body.scrollTop = body.scrollHeight;
 }
-function sendAIMessage(preset) {
+async function sendAIMessage(preset) {
     const input = document.getElementById('aiInput');
     const text = (preset || input.value).trim(); if (!text) return;
     const chat = document.getElementById('aiChatMessages');
     chat.innerHTML += `<div class="chat-msg user align-self-end">${escapeHTML(text)}</div>`;
     input.value = '';
     chat.scrollTop = chat.scrollHeight;
-    setTimeout(() => {
-        let reply = "MarketLink connects you directly with local farmers. Pre-orders are picked up on weekends and payment is collected in person.";
-        const q = text.toLowerCase();
-        if (q.includes('hour') || q.includes('time') || q.includes('schedule') || q.includes('when')) reply = "Most markets run Saturdays 8 AM - 1 PM or Sundays 9 AM - 2 PM. Check the Markets tab for exact stall schedules!";
-        else if (q.includes('pay') || q.includes('card') || q.includes('cash')) reply = "There are no online payment fees — you pay the farmer directly in cash or card when you pick up your fresh basket.";
-        else if (q.includes('fresh') || q.includes('organic')) reply = "Everything is farm-fresh! Growers harvest only what was pre-ordered, so items reach you within hours of picking.";
-        else if (q.includes('pickup') || q.includes('pick up') || q.includes('stall')) reply = "After checkout you'll get a reserved pickup window. Just bring the order number to the farmer's stall at the market.";
-        else if (q.includes('apple') || q.includes('tomato') || q.includes('honey') || q.includes('milk')) reply = "That's in-stock this week! Head to the Products marketplace and filter by category to reserve it.";
-        else if (q.includes('hi') || q.includes('hello') || q.includes('hey')) reply = "Hello there! 👋 Ask me about market schedules, how pickup works, or what's fresh this week.";
-        chat.innerHTML += `<div class="chat-msg bot">${escapeHTML(reply)}</div>`;
-        chat.scrollTop = chat.scrollHeight;
-    }, 550);
+    const pending = document.createElement('div');
+    pending.className = 'chat-msg bot';
+    pending.textContent = 'Checking the MarketLink database...';
+    chat.appendChild(pending);
+
+    try {
+        const response = await fetch(window.ML_URLS?.assistantChat || '/assistant/chat', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': mlCsrf(),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ message: text })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.message || 'The assistant is temporarily unavailable.');
+        if (!payload.reply) throw new Error('The AI assistant returned an empty response.');
+        pending.textContent = payload.reply;
+    } catch (error) {
+        pending.textContent = error.message || 'The assistant is temporarily unavailable. Please try again.';
+    }
+    chat.scrollTop = chat.scrollHeight;
 }
 
 /* ---------- Map helper (home) ---------- */

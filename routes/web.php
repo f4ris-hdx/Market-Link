@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AssistantController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FarmerController;
 use App\Http\Controllers\PublicController;
+use App\Http\Controllers\ReviewController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PublicController::class, 'home'])->name('home');
@@ -14,6 +16,7 @@ Route::get('/markets', [PublicController::class, 'markets'])->name('markets.inde
 Route::get('/farmers', [PublicController::class, 'farmers'])->name('farmers.index');
 Route::get('/about', [PublicController::class, 'about'])->name('about');
 Route::get('/how-it-works', [PublicController::class, 'howItWorks'])->name('how-it-works');
+Route::post('/assistant/chat', AssistantController::class)->middleware('throttle:30,1')->name('assistant.chat');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -29,7 +32,12 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/dashboard/profile', [DashboardController::class, 'updateProfile'])->name('dashboard.profile');
     Route::post('/favorites/{product}', [DashboardController::class, 'toggleFavorite'])->name('favorites.toggle');
+    Route::post('/farmers/{farmer}/favorite', [ReviewController::class, 'toggleFarmerFavorite'])->name('farmers.favorite');
+    Route::post('/reviews/products/{product}', [ReviewController::class, 'storeProduct'])->name('reviews.products.store');
+    Route::post('/reviews/farmers/{farmer}', [ReviewController::class, 'storeFarmer'])->name('reviews.farmers.store');
     Route::post('/orders/{order}/cancel', [DashboardController::class, 'cancelOrder'])->name('orders.cancel');
+    Route::post('/orders/{order}/picked-up', [DashboardController::class, 'markPickedUp'])->name('orders.picked-up');
+    Route::post('/orders/{order}/modify', [DashboardController::class, 'modifyOrder'])->name('orders.modify');
 
     Route::post('/cart/add/{product}', [CartController::class, 'add'])->name('cart.add');
     Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
@@ -48,6 +56,7 @@ Route::middleware(['auth', 'role:farmer'])->prefix('farmer')->name('farmer.')->g
     Route::get('/products/{product}/edit', [FarmerController::class, 'edit'])->name('products.edit');
     Route::put('/products/{product}', [FarmerController::class, 'update'])->name('products.update');
     Route::delete('/products/{product}', [FarmerController::class, 'destroy'])->name('products.destroy');
+    Route::post('/products/{product}/visibility', [FarmerController::class, 'toggleProductVisibility'])->name('products.visibility');
     Route::get('/orders', [FarmerController::class, 'orders'])->name('orders');
     Route::post('/orders/{order}', [FarmerController::class, 'updateOrder'])->name('orders.update');
     Route::get('/slots', [FarmerController::class, 'slots'])->name('slots');

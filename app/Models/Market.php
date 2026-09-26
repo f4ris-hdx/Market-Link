@@ -9,11 +9,19 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'location', 'days', 'farmers_count', 'distance'])]
+#[Fillable(['name', 'location', 'latitude', 'longitude', 'days', 'farmers_count', 'distance'])]
 class Market extends Model
 {
     /** @use HasFactory<MarketFactory> */
     use HasFactory;
+
+    protected function casts(): array
+    {
+        return [
+            'latitude' => 'float',
+            'longitude' => 'float',
+        ];
+    }
 
     public function farmers(): HasMany
     {

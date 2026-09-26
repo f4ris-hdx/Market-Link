@@ -53,8 +53,16 @@ class FarmerController extends Controller
 
         $ordersCount = $orders->count();
         $productCount = $productIds->count();
+        $reviews = $farmer->reviews()
+            ->with(['user', 'product'])
+            ->where('status', 'published')
+            ->latest()
+            ->limit(12)
+            ->get();
+        $reviewCount = $farmer->reviews()->where('status', 'published')->count();
+        $averageRating = (float) ($farmer->reviews()->where('status', 'published')->avg('rating') ?? $farmer->rating);
 
-        return view('farmer.dashboard', compact('farmer', 'orders', 'revenue', 'ordersCount', 'productCount'));
+        return view('farmer.dashboard', compact('farmer', 'orders', 'revenue', 'ordersCount', 'productCount', 'reviews', 'reviewCount', 'averageRating'));
     }
 
     public function products(): View
@@ -154,6 +162,16 @@ class FarmerController extends Controller
         $product->delete();
 
         return back()->with('status', 'Product removed.');
+    }
+
+    public function toggleProductVisibility(Product $product): RedirectResponse
+    {
+        $farmer = $this->profile();
+        abort_unless($product->farmer_id === $farmer->id, 403);
+
+        $product->update(['status' => $product->status === 'approved' ? 'hidden' : 'approved']);
+
+        return back()->with('status', $product->status === 'approved' ? 'Product is visible to customers.' : 'Product is hidden from customers.');
     }
 
     public function orders(): View

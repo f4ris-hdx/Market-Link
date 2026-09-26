@@ -100,7 +100,10 @@
                     <option value="near">Nearest First</option>
                 </select>
             </div>
-            <div class="col-md-2 col-lg-4 text-md-end">
+            <div class="col-md-4 col-lg-2">
+                <button class="btn btn-eco-outline w-100" type="button" onclick="findNearbyMarkets()"><i class="fa-solid fa-location-crosshairs me-1"></i>Near me</button>
+            </div>
+            <div class="col-md-2 col-lg-2 text-md-end">
                 <span class="text-muted fw-semibold" id="marketsCountLabel">6 markets</span>
             </div>
         </div>
@@ -266,7 +269,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>window.ML_BACKEND = @json($frontendData ?? []); window.ML_URLS = { home: @json(route('home')), products: @json(route('products.index')), markets: @json(route('markets.index')), farmers: @json(route('farmers.index')), dashboard: @json(route('dashboard')), login: @json(route('login')), cartAdd: @json(url('/cart/add')), cartUpdate: @json(route('cart.update')), cartRemove: @json(url('/cart/remove')), favorites: @json(url('/favorites')), checkout: @json(route('checkout.place')), profile: @json(route('dashboard.profile')), farmerDashboard: @json(route('farmer.dashboard')), adminDashboard: @json(route('admin.dashboard')) };</script>
+    <script>window.ML_BACKEND = @json($frontendData ?? []); window.ML_MAP_REVERSE_URL = @json(config('services.maps.reverse_geocoder_url')); window.ML_URLS = { home: @json(route('home')), products: @json(route('products.index')), markets: @json(route('markets.index')), farmers: @json(route('farmers.index')), dashboard: @json(route('dashboard')), login: @json(route('login')), cartAdd: @json(url('/cart/add')), cartUpdate: @json(route('cart.update')), cartRemove: @json(url('/cart/remove')), favorites: @json(url('/favorites')), checkout: @json(route('checkout.place')), profile: @json(route('dashboard.profile')), farmerDashboard: @json(route('farmer.dashboard')), adminDashboard: @json(route('admin.dashboard')) };</script>
     <script src="{{ asset('js/app.js') }}"></script>
     <script>
         initGlobalUI();

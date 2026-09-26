@@ -120,6 +120,12 @@
                         </select>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Market</label>
+                        <select id="filterMarket" class="form-select" onchange="applyProductFilters()">
+                            <option value="">All Markets</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Max Price ($)</label>
                         <input type="range" class="form-range" id="filterPriceRange" min="1" max="30" step="1" value="30" oninput="updatePriceLabel(this.value); applyProductFilters();">
                         <div class="d-flex justify-content-between text-muted small">

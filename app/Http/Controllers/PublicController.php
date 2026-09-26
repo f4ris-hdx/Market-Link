@@ -19,8 +19,9 @@ class PublicController extends Controller
 
     private function frontendData(): array
     {
-        $products = Product::with(['farmer', 'category'])
+        $products = Product::with(['farmer', 'category', 'markets'])
             ->where('stock', '>', 0)
+            ->where('status', 'approved')
             ->whereHas('farmer', fn ($query) => $query->where('status', 'verified'))
             ->orderByDesc('created_at')
             ->get()
@@ -28,6 +29,7 @@ class PublicController extends Controller
                 'id' => $p->id,
                 'name' => $p->name,
                 'farmerId' => $p->farmer_id,
+                'marketIds' => $p->markets->pluck('id')->map(fn ($id) => (int) $id)->values()->all(),
                 'category' => $p->category?->name ?? 'Other',
                 'farmer' => $p->farmer?->name ?? 'Local Farmer',
                 'price' => (float) $p->price,
@@ -41,6 +43,8 @@ class PublicController extends Controller
             'id' => $m->id,
             'name' => $m->name,
             'location' => $m->location,
+            'latitude' => $m->latitude,
+            'longitude' => $m->longitude,
             'days' => $m->days,
             'farmersCount' => (int) ($m->farmers_count ?: $m->farmers()->count()),
             'distance' => (float) ($m->distance ?? 0),
@@ -48,6 +52,7 @@ class PublicController extends Controller
 
         $farmers = Farmer::with('market')->where('status', 'verified')->orderBy('name')->get()->map(fn (Farmer $f) => [
             'id' => $f->id,
+            'marketId' => $f->market_id,
             'name' => $f->name,
             'location' => $f->location,
             'specialty' => $f->specialty ?: 'Local farm produce',
@@ -62,7 +67,7 @@ class PublicController extends Controller
             'csrf' => csrf_token(),
             'authenticated' => auth()->check(),
             'role' => auth()->user()?->role ?? 'customer',
-            'user' => auth()->user() ? ['id' => auth()->id(), 'name' => auth()->user()->name, 'email' => auth()->user()->email, 'phone' => auth()->user()->phone] : null,
+            'user' => auth()->user() ? ['id' => auth()->id(), 'name' => auth()->user()->name, 'email' => auth()->user()->email, 'phone' => auth()->user()->phone, 'location' => auth()->user()->location, 'latitude' => auth()->user()->latitude, 'longitude' => auth()->user()->longitude] : null,
             'products' => $products,
             'markets' => $markets,
             'farmers' => $farmers,

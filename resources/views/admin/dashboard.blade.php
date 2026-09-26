@@ -54,4 +54,26 @@
         </div>
     </div>
 </div>
+
+<div class="eco-card p-4 mt-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <div><h4 class="fw-bold mb-1"><i class="fa-solid fa-star text-warning me-2"></i>Ratings &amp; Reviews</h4><p class="small text-muted mb-0">{{ number_format($metrics['reviews']) }} published reviews · {{ number_format($metrics['averageRating'], 1) }}/5 average rating</p></div>
+        <span class="badge bg-mint text-forest">Customer feedback</span>
+    </div>
+    @if($recentReviews->isEmpty())
+        <p class="small text-muted mb-0">No customer ratings or reviews yet.</p>
+    @else
+        <div class="row g-3">
+            @foreach($recentReviews as $review)
+                <div class="col-lg-6">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="d-flex justify-content-between gap-2"><strong>{{ $review->user?->name ?? 'Customer' }}</strong><span class="rating">{{ str_repeat('★', $review->rating) }}{{ str_repeat('☆', 5 - $review->rating) }}</span></div>
+                        <div class="small text-muted">{{ $review->product?->name ?? 'Farmer review: '.$review->farmer?->name }} · {{ $review->created_at->format('M j, Y g:i A') }}</div>
+                        @if($review->review)<p class="small mb-0 mt-2">{{ $review->review }}</p>@endif
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    @endif
+</div>
 @endsection

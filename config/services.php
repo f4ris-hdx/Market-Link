@@ -35,4 +35,20 @@ return [
         ],
     ],
 
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+        'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com'),
+        'version' => env('GEMINI_API_VERSION', 'v1beta'),
+        'model' => env('GEMINI_MODEL', 'gemini-3.8-flash'),
+        'timeout' => env('GEMINI_TIMEOUT', 12),
+        'verify' => filter_var(env('GEMINI_SSL_VERIFY', true), FILTER_VALIDATE_BOOLEAN),
+    ],
+
+    'maps' => [
+        'tile_url' => env('MAP_TILE_URL', 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
+        'attribution' => env('MAP_ATTRIBUTION', '&copy; OpenStreetMap contributors'),
+        'geocoder_url' => env('MAP_GEOCODER_URL', 'https://nominatim.openstreetmap.org/search'),
+        'reverse_geocoder_url' => env('MAP_REVERSE_GEOCODER_URL', 'https://nominatim.openstreetmap.org/reverse'),
+    ],
+
 ];

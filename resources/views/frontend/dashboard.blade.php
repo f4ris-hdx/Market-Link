@@ -103,6 +103,7 @@
                     </div>
                     <a href="#" class="sidebar-link active" data-tab="orders" onclick="switchCustomerTab('orders')"><i class="fa-solid fa-box"></i> My Pre-Orders</a>
                     <a href="#" class="sidebar-link" data-tab="favorites" onclick="switchCustomerTab('favorites')"><i class="fa-solid fa-heart"></i> Favorites</a>
+                    <a href="#" class="sidebar-link" data-tab="reviews" onclick="switchCustomerTab('reviews')"><i class="fa-solid fa-star"></i> Ratings &amp; Reviews</a>
                     <a href="#" class="sidebar-link" data-tab="profile" onclick="switchCustomerTab('profile')"><i class="fa-solid fa-id-card"></i> Profile Settings</a>
                 </div>
             </div>
@@ -122,6 +123,15 @@
                     </div>
                 </div>
 
+                <div id="custTabReviews" class="customer-tab-content d-none">
+                    <div class="eco-card p-4">
+                        <h4 class="fw-bold mb-1"><i class="fa-solid fa-star text-warning me-2"></i>Ratings &amp; Reviews</h4>
+                        <p class="small text-muted mb-4">Rate products and farmers, and update your review whenever your experience changes.</p>
+                        <div id="customerFavoriteFarmers" class="mb-4"></div>
+                        <div id="customerReviewsPanel"></div>
+                    </div>
+                </div>
+
                 <div id="custTabProfile" class="customer-tab-content d-none">
                     <div class="eco-card p-4">
                         <h4 class="fw-bold mb-3"><i class="fa-solid fa-id-card text-fresh me-2"></i>Profile Information</h4>
@@ -129,7 +139,7 @@
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Full Name</label>
-                                    <input type="text" class="form-control" value="{{ old('name', auth()->user()->name) }}">
+                                    <input type="text" class="form-control" name="name" value="{{ old('name', auth()->user()->name) }}" required>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Email Address</label>
@@ -137,15 +147,17 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Contact Phone</label>
-                                    <input type="text" class="form-control" value="{{ old('phone', auth()->user()->phone) }}">
+                                    <input type="text" class="form-control" name="phone" value="{{ old('phone', auth()->user()->phone) }}">
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold">Preferred Market</label>
-                                    <select class="form-select">
-                                        <option>Central Farmers Hub</option>
-                                        <option>Green Valley Eco Market</option>
-                                        <option>Harvest Square Hub</option>
-                                    </select>
+                                    <label class="form-label fw-bold">Your location</label>
+                                    <input type="text" class="form-control" name="location" id="customerLocation" value="{{ old('location', auth()->user()->location) }}" placeholder="Enter your area or address">
+                                    <div id="customerLocationMap" class="mt-2" style="height:240px;border:1px solid #dfe7e2;border-radius:12px;overflow:hidden"></div>
+                                    <div class="form-text">Click the map to select your location. The address will fill automatically, and you can edit it manually.</div>
+                                    <button class="btn btn-sm btn-eco-outline mt-2" type="button" onclick="useCustomerLocation()"><i class="fa-solid fa-location-crosshairs me-1"></i>Use my current location</button>
+                                    <input type="hidden" name="latitude" id="customerLatitude" value="{{ old('latitude', auth()->user()->latitude) }}">
+                                    <input type="hidden" name="longitude" id="customerLongitude" value="{{ old('longitude', auth()->user()->longitude) }}">
+                                    <div class="form-text">This is used only to sort nearby markets for you.</div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Weekly Reminders</label>
@@ -330,7 +342,9 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>window.ML_BACKEND = @json($frontendData ?? []); window.ML_URLS = { home: @json(route('home')), products: @json(route('products.index')), markets: @json(route('markets.index')), farmers: @json(route('farmers.index')), dashboard: @json(route('dashboard')), login: @json(route('login')), cartAdd: @json(url('/cart/add')), cartUpdate: @json(route('cart.update')), cartRemove: @json(url('/cart/remove')), favorites: @json(url('/favorites')), checkout: @json(route('checkout.place')), profile: @json(route('dashboard.profile')), farmerDashboard: @json(route('farmer.dashboard')), adminDashboard: @json(route('admin.dashboard')) };</script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script>window.ML_BACKEND = @json($frontendData ?? []); window.ML_MAP_REVERSE_URL = @json(config('services.maps.reverse_geocoder_url')); window.ML_MAP_TILE_URL = @json(config('services.maps.tile_url')); window.ML_MAP_ATTRIBUTION = @json(config('services.maps.attribution')); window.ML_URLS = { home: @json(route('home')), products: @json(route('products.index')), markets: @json(route('markets.index')), farmers: @json(route('farmers.index')), dashboard: @json(route('dashboard')), login: @json(route('login')), cartAdd: @json(url('/cart/add')), cartUpdate: @json(route('cart.update')), cartRemove: @json(url('/cart/remove')), favorites: @json(url('/favorites')), checkout: @json(route('checkout.place')), profile: @json(route('dashboard.profile')), farmerDashboard: @json(route('farmer.dashboard')), adminDashboard: @json(route('admin.dashboard')) };</script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="{{ asset('js/app.js') }}"></script>
     <script>
         initGlobalUI();
