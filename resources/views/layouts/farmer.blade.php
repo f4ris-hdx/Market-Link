@@ -30,7 +30,6 @@
                     <li class="nav-item"><a class="nav-link" href="{{ route('products.index') }}"><i class="fa-solid fa-store me-1"></i>Marketplace</a></li>
                 </ul>
                 <div class="d-flex align-items-center gap-2 nav-actions">
-                    <a class="btn btn-eco-outline btn-sm" href="{{ route('home') }}"><i class="fa-solid fa-arrow-up-right-from-square me-1"></i>View Site</a>
                     <div class="dropdown">
                         <button class="btn btn-eco-primary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fa-solid fa-tractor"></i>{{ auth()->user()->name }}

@@ -81,6 +81,34 @@
                 <div class="mb-3"><label class="form-label small fw-semibold">Specialty</label><input class="form-control" name="specialty" value="{{ old('specialty', $farmer->specialty) }}"></div>
                 <button class="btn btn-eco-primary btn-sm" type="submit"><i class="fa-solid fa-floppy-disk me-1"></i>Save Profile</button>
             </form>
+            <hr>
+            <h5 class="fw-bold mb-2">Assigned market</h5>
+            <p class="small text-muted">Current market: <strong class="text-dark">{{ $farmer->market?->name ?? 'Not assigned' }}</strong></p>
+            @if($marketChangeRequest?->status === 'pending')
+                <div class="alert alert-warning small mb-0">Your request to move to <strong>{{ $marketChangeRequest->requestedMarket?->name }}</strong> is awaiting admin approval. Your current market stays active for now.</div>
+            @else
+                @if($marketChangeRequest?->status === 'rejected')
+                    <div class="alert alert-secondary small">Your previous request for {{ $marketChangeRequest->requestedMarket?->name }} was declined. You may submit another request.</div>
+                @elseif($marketChangeRequest?->status === 'approved')
+                    <div class="alert alert-success small">Your last market change request was approved.</div>
+                @endif
+                <form method="POST" action="{{ route('farmer.market-change-request.store') }}">
+                    @csrf
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold" for="requestedMarket">Request a market change</label>
+                        <select class="form-select form-select-sm" name="requested_market_id" id="requestedMarket" required>
+                            <option value="">Choose a market</option>
+                            @foreach($markets as $market)
+                                @if((int) $market->id !== (int) $farmer->market_id)
+                                    <option value="{{ $market->id }}" @selected(old('requested_market_id') == $market->id)>{{ $market->name }} — {{ $market->location }}</option>
+                                @endif
+                            @endforeach
+                        </select>
+                        @error('requested_market_id')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                    </div>
+                    <button class="btn btn-eco-outline btn-sm" type="submit"><i class="fa-solid fa-paper-plane me-1"></i>Send request</button>
+                </form>
+            @endif
         </div>
     </div>
 </div>

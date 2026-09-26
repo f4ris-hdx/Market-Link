@@ -25,12 +25,12 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold small">Market</label>
-                            <select class="form-select" name="market_id">
-                                <option value="" selected>Any market (best fit)</option>
+                            <select class="form-select" name="market_id" required>
                                 @foreach ($markets as $market)
-                                    <option value="{{ $market->id }}">{{ $market->name }} — {{ $market->location }}</option>
+                                    <option value="{{ $market->id }}" @selected($markets->count() === 1)>{{ $market->name }} — {{ $market->location }}</option>
                                 @endforeach
                             </select>
+                            <div class="form-text">Only markets that can fulfill every product in your basket are listed.</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold small">Pickup slot *</label>
@@ -67,6 +67,7 @@
                             <span>{{ $line['qty'] }}x {{ $line['product']->name }}</span>
                             <span>${{ number_format($line['total'], 2) }}</span>
                         </div>
+                        <div class="small text-muted mb-2"><i class="fa-solid fa-location-dot me-1"></i>{{ $line['product']->markets->map(fn ($market) => $market->name.' — '.$market->location)->implode('; ') }}</div>
                     @endforeach
                 </div>
                 <hr>

@@ -93,7 +93,12 @@
             <div class="col-md-7 col-lg-5">
                 <input type="text" id="farmerSearchInput" class="form-control" placeholder="Search farmers or specialties..." oninput="renderFarmersDirectory()">
             </div>
-            <div class="col-md-5 col-lg-7 text-md-end">
+            <div class="col-md-5 col-lg-4">
+                <select id="filterFarmerMarket" class="form-select" onchange="renderFarmersDirectory()">
+                    <option value="">All Markets</option>
+                </select>
+            </div>
+            <div class="col-md-12 col-lg-3 text-md-end">
                 <span class="text-muted fw-semibold" id="farmersCountLabel">0 farmers</span>
             </div>
         </div>

@@ -43,7 +43,7 @@
     </div>
     <div class="col-lg-5">
         <div class="eco-card p-4">
-            <h4 class="fw-bold mb-3"><i class="fa-solid fa-clock-rotate-left text-fresh me-2"></i>Recent Orders</h4>
+            <div class="d-flex justify-content-between align-items-center mb-3"><h4 class="fw-bold mb-0"><i class="fa-solid fa-clock-rotate-left text-fresh me-2"></i>Recent Orders</h4><a class="btn btn-sm btn-eco-outline" href="{{ route('admin.orders') }}">View all</a></div>
             @if($recentOrders->isEmpty())
                 <p class="small text-muted mb-0">No orders yet.</p>
             @else

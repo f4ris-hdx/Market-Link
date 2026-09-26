@@ -218,30 +218,37 @@
                     <span class="eyebrow"><i class="fa-solid fa-location-dot"></i> Locations</span>
                     <h2 class="section-title mt-2">Nearby Farmers Markets</h2>
                 </div>
-                <a class="btn btn-eco-primary" href="{{ route('markets.index') }}">All Markets &amp; Schedules</a>
+                <div class="d-flex flex-wrap gap-2">
+                    @if(auth()->check() && auth()->user()->isCustomer())
+                        @if(auth()->user()->latitude !== null && auth()->user()->longitude !== null)
+                            <a class="btn btn-eco-outline" href="{{ route('markets.index', ['sort' => 'near']) }}"><i class="fa-solid fa-location-crosshairs me-1"></i>Browse nearby markets</a>
+                        @else
+                            <a class="btn btn-eco-outline" href="{{ route('dashboard', ['tab' => 'profile']) }}"><i class="fa-solid fa-location-crosshairs me-1"></i>Set your location</a>
+                        @endif
+                    @elseif(!auth()->check())
+                        <a class="btn btn-eco-outline" href="{{ route('login') }}"><i class="fa-solid fa-location-crosshairs me-1"></i>Set your location</a>
+                    @endif
+                    <a class="btn btn-eco-primary" href="{{ route('markets.index') }}">All Markets &amp; Schedules</a>
+                </div>
             </div>
             <div class="row g-4">
                 <div class="col-lg-5" id="homeMarketsList"></div>
                 <div class="col-lg-7">
-                    <div class="map-placeholder p-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="badge bg-forest text-white px-3 py-2"><i class="fa-solid fa-map-pin me-1"></i> Interactive Map Preview</span>
-                            <small class="text-muted">Click markers to inspect market slots</small>
-                        </div>
-                        <div class="map-pin" style="top:30%; left:25%;" onclick="showMarketMapDetail('Central Farmers Hub')" title="Central Farmers Hub">
-                            <i class="fa-solid fa-location-dot text-danger"></i>
-                        </div>
-                        <div class="map-pin" style="top:60%; left:70%;" onclick="showMarketMapDetail('Green Valley Eco Market')" title="Green Valley Eco Market">
-                            <i class="fa-solid fa-location-dot text-success"></i>
-                        </div>
-                        <div class="map-pin" style="top:44%; left:50%;" onclick="showMarketMapDetail('West End Organics Fair')" title="West End Organics Fair">
-                            <i class="fa-solid fa-location-dot text-warning"></i>
-                        </div>
-                        <div class="position-absolute bottom-0 start-0 m-3 glass-panel p-3 shadow" id="mapDetailBox" style="max-width:290px; display:none;">
-                            <h6 class="fw-bold mb-1 text-forest" id="mapDetailTitle">Market Selected</h6>
-                            <p class="small text-muted mb-2" id="mapDetailSub">Address and timings</p>
-                            <a class="btn btn-sm btn-eco-primary w-100" href="{{ route('markets.index') }}">View Market Stall</a>
-                        </div>
+                    <div class="eco-card p-4 h-100 d-flex flex-column justify-content-center">
+                        <span class="eyebrow"><i class="fa-solid fa-location-dot"></i> Your area</span>
+                        <h3 class="h4 fw-bold mt-2">Find markets near you</h3>
+                        <p class="text-muted mb-4">Set your location in your customer profile to sort markets by distance. You can update it any time.</p>
+                        @if(auth()->check() && auth()->user()->isCustomer())
+                            @if(auth()->user()->latitude !== null && auth()->user()->longitude !== null)
+                                <a class="btn btn-eco-primary align-self-start" href="{{ route('markets.index', ['sort' => 'near']) }}"><i class="fa-solid fa-location-crosshairs me-2"></i>Browse nearby markets</a>
+                            @else
+                                <a class="btn btn-eco-primary align-self-start" href="{{ route('dashboard', ['tab' => 'profile']) }}"><i class="fa-solid fa-location-crosshairs me-2"></i>Set your location</a>
+                            @endif
+                        @elseif(!auth()->check())
+                            <a class="btn btn-eco-primary align-self-start" href="{{ route('login') }}"><i class="fa-solid fa-right-to-bracket me-2"></i>Sign in to set location</a>
+                        @else
+                            <a class="btn btn-eco-primary align-self-start" href="{{ route('markets.index') }}"><i class="fa-solid fa-store me-2"></i>Browse markets</a>
+                        @endif
                     </div>
                 </div>
             </div>

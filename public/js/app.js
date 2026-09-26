@@ -116,10 +116,37 @@ async function mlPost(url, data = {}) {
     const payload = await res.json().catch(()=>({})); if(!res.ok) throw new Error(payload.message || 'Request failed.'); return payload;
 }
 
+function cartItemFromProduct(product, quantity) {
+    return {
+        id: Number(product.id),
+        name: product.name,
+        price: product.price,
+        farmer: product.farmer,
+        unit: product.unit,
+        qty: Number(quantity),
+        marketIds: Array.isArray(product.marketIds) ? product.marketIds.map(Number) : [],
+        markets: Array.isArray(product.markets) ? product.markets : [],
+    };
+}
+
+function commonCartMarkets() {
+    let commonMarketIds = null;
+
+    state.cart.forEach(item => {
+        const product = state.products.find(candidate => Number(candidate.id) === Number(item.id));
+        const marketIds = Array.isArray(product?.marketIds) ? product.marketIds.map(Number) : [];
+        commonMarketIds = commonMarketIds === null
+            ? marketIds
+            : commonMarketIds.filter(marketId => marketIds.includes(marketId));
+    });
+
+    return sampleMarkets.filter(market => (commonMarketIds || []).includes(Number(market.id)));
+}
+
 /* ---------- State (persisted) ---------- */
 let state = {
     products: Array.isArray(ML_BACKEND.products) ? ML_BACKEND.products : (JSON.parse(localStorage.getItem('ml_products')) || sampleProducts),
-    cart: ML_BACKEND.cart ? Object.entries(ML_BACKEND.cart).map(([id,qty]) => { const p=sampleProducts.find(x=>Number(x.id)===Number(id)); return p?{id:Number(id),name:p.name,price:p.price,farmer:p.farmer,unit:p.unit,qty:Number(qty)}:null; }).filter(Boolean) : (JSON.parse(localStorage.getItem('ml_cart')) || []),
+    cart: ML_BACKEND.cart ? Object.entries(ML_BACKEND.cart).map(([id,qty]) => { const p=sampleProducts.find(x=>Number(x.id)===Number(id)); return p?cartItemFromProduct(p,qty):null; }).filter(Boolean) : (JSON.parse(localStorage.getItem('ml_cart')) || []).map(item => { const p=sampleProducts.find(x=>Number(x.id)===Number(item.id)); return p?cartItemFromProduct(p,item.qty):item; }),
     favorites: Array.isArray(ML_BACKEND.favorites) ? ML_BACKEND.favorites.map(Number) : (JSON.parse(localStorage.getItem('ml_favorites')) || []),
     orders: Array.isArray(ML_BACKEND.orders) ? ML_BACKEND.orders : (JSON.parse(localStorage.getItem('ml_orders')) || []),
     role: ML_BACKEND.role || document.body.dataset.role || 'customer',
@@ -235,7 +262,7 @@ async function addToCart(productId, qty) {
     if (currentQty + addQty > product.stock) { showToast(`Only ${product.stock} of "${product.name}" available`, 'error'); return; }
     try {
         const payload = await mlPost(`${ML_URLS.cartAdd}/${productId}`, {qty:addQty});
-        state.cart = Object.entries(payload.cart || {}).map(([id,q]) => { const p=state.products.find(x=>Number(x.id)===Number(id)); return p?{id:Number(id),name:p.name,price:p.price,farmer:p.farmer,unit:p.unit,qty:Number(q)}:null; }).filter(Boolean);
+        state.cart = Object.entries(payload.cart || {}).map(([id,q]) => { const p=state.products.find(x=>Number(x.id)===Number(id)); return p?cartItemFromProduct(p,q):null; }).filter(Boolean);
         saveState(); showToast(`Added ${product.name} to your cart!`, 'success');
     } catch(e) { showToast(e.message,'error'); }
 }
@@ -268,9 +295,11 @@ function renderCartItems() {
     container.innerHTML = state.cart.map((item, index) => {
         const total = item.price * item.qty;
         subtotal += total;
+        const markets = (item.markets || []).map(market => `${market.name} — ${market.location}`).join('; ');
         return `<div class="d-flex justify-content-between align-items-center p-3 border-bottom flex-wrap gap-2">
             <div><h6 class="fw-bold mb-0 text-forest">${item.name}</h6>
-            <small class="text-muted">${item.farmer} · ${fmtMoney(item.price)}/${item.unit}</small></div>
+            <small class="text-muted d-block">${item.farmer} · ${fmtMoney(item.price)}/${item.unit}</small>
+            <small class="text-muted d-block"><i class="fa-solid fa-location-dot me-1"></i>${markets || 'No approved pickup market'}</small></div>
             <div class="d-flex align-items-center gap-2">
                 <div class="btn-group"><button class="btn btn-sm btn-outline-secondary" onclick="changeQty(${index},-1)"><i class="fa-solid fa-minus"></i></button>
                 <span class="btn btn-sm btn-light fw-bold" style="min-width:40px;">${item.qty}</span>
@@ -288,14 +317,25 @@ async function changeQty(index, delta) {
     const item=state.cart[index]; if(!item) return; const product=state.products.find(p=>Number(p.id)===Number(item.id));
     const nextQty=item.qty+delta; if(nextQty<0) return; if(product && nextQty>product.stock){showToast(`Only ${product.stock} of "${product.name}" available`,'error');return;}
     const body=new URLSearchParams(); state.cart.forEach((c,i)=>body.append(`qty[${c.id}]`, i===index?nextQty:c.qty));
-    try{const res=await fetch(ML_URLS.cartUpdate,{method:'POST',headers:{'X-CSRF-TOKEN':mlCsrf(),'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},body});const payload=await res.json();if(!res.ok)throw new Error(payload.message||'Could not update basket.');state.cart=Object.entries(payload.cart||{}).map(([id,q])=>{const p=state.products.find(x=>Number(x.id)===Number(id));return p?{id:Number(id),name:p.name,price:p.price,farmer:p.farmer,unit:p.unit,qty:Number(q)}:null;}).filter(Boolean);saveState();renderCartItems();}catch(e){showToast(e.message,'error');}
+    try{const res=await fetch(ML_URLS.cartUpdate,{method:'POST',headers:{'X-CSRF-TOKEN':mlCsrf(),'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},body});const payload=await res.json();if(!res.ok)throw new Error(payload.message||'Could not update basket.');state.cart=Object.entries(payload.cart||{}).map(([id,q])=>{const p=state.products.find(x=>Number(x.id)===Number(id));return p?cartItemFromProduct(p,q):null;}).filter(Boolean);saveState();renderCartItems();}catch(e){showToast(e.message,'error');}
 }
 async function removeCartItem(index) {
     const item=state.cart[index]; if(!item) return;
-    try{const payload=await mlPost(`${ML_URLS.cartRemove}/${item.id}`,{});state.cart=Object.entries(payload.cart||{}).map(([id,q])=>{const p=state.products.find(x=>Number(x.id)===Number(id));return p?{id:Number(id),name:p.name,price:p.price,farmer:p.farmer,unit:p.unit,qty:Number(q)}:null;}).filter(Boolean);saveState();renderCartItems();}catch(e){showToast(e.message,'error');}
+    try{const payload=await mlPost(`${ML_URLS.cartRemove}/${item.id}`,{});state.cart=Object.entries(payload.cart||{}).map(([id,q])=>{const p=state.products.find(x=>Number(x.id)===Number(id));return p?cartItemFromProduct(p,q):null;}).filter(Boolean);saveState();renderCartItems();}catch(e){showToast(e.message,'error');}
 }
 function proceedToCheckout() {
     if (state.cart.length === 0) { showToast('Your cart is empty — add some produce first!', 'info'); return; }
+    const eligibleMarkets = commonCartMarkets();
+    if (eligibleMarkets.length === 0) {
+        showToast('These products do not share an approved pickup market. Place separate orders for products from different markets.', 'error');
+        return;
+    }
+    const marketSelect = document.getElementById('checkoutMarket');
+    if (marketSelect) {
+        marketSelect.innerHTML = eligibleMarkets.map(market => `<option value="${market.id}">${escapeHTML(market.name)} — ${escapeHTML(market.location)}</option>`).join('');
+        marketSelect.value = String(eligibleMarkets[0].id);
+        marketSelect.disabled = eligibleMarkets.length === 1;
+    }
     bootstrap.Modal.getInstance(document.getElementById('cartModal')).hide();
     renderCheckoutSummary();
     new bootstrap.Modal(document.getElementById('checkoutModal')).show();
@@ -307,14 +347,17 @@ function renderCheckoutSummary() {
     box.innerHTML = `<div class="d-flex justify-content-between align-items-center mb-2">
         <span class="fw-semibold">${state.cart.reduce((s, i) => s + i.qty, 0)} item(s) in basket</span>
         <span class="fw-bold text-forest">${fmtMoney(subtotal)}</span></div>
-        <div class="small text-muted">${state.cart.map(i => `${i.qty}x ${i.name}`).join(' · ')}</div>`;
+        <div class="small text-muted">${state.cart.map(item => {
+            const markets = (item.markets || []).map(market => `${market.name} — ${market.location}`).join('; ');
+            return `<div class="mt-2">${item.qty}x ${escapeHTML(item.name)}<div class="text-muted"><i class="fa-solid fa-location-dot me-1"></i>${escapeHTML(markets || 'No approved pickup market')}</div></div>`;
+        }).join('')}</div>`;
 }
 
 async function completePreOrder() {
     if(!state.cart.length){showToast('Your cart is empty — add some produce first!','info');return;} if(!ML_BACKEND.authenticated){window.location.href=ML_URLS.login;return;}
-    const marketName=document.getElementById('checkoutMarket').value, market=sampleMarkets.find(m=>m.name===marketName), slot=document.getElementById('checkoutSlot').value;
+    const marketId=document.getElementById('checkoutMarket').value, slot=document.getElementById('checkoutSlot').value;
     const name=(document.getElementById('checkoutName')||{value:''}).value, phone=(document.getElementById('checkoutPhone')||{value:''}).value;
-    try{const payload=await mlPost(ML_URLS.checkout,{pickup_name:name,pickup_phone:phone,market_id:market?.id||'',slot});const cm=bootstrap.Modal.getInstance(document.getElementById('checkoutModal'));if(cm)cm.hide();state.cart=[];saveState();showToast(`Order ${payload.order_number} placed! Pay in person at pickup.`,'success');setTimeout(()=>window.location.href=ML_URLS.dashboard,500);}catch(e){showToast(e.message,'error');}
+    try{const payload=await mlPost(ML_URLS.checkout,{pickup_name:name,pickup_phone:phone,market_id:marketId,slot});const cm=bootstrap.Modal.getInstance(document.getElementById('checkoutModal'));if(cm)cm.hide();state.cart=[];saveState();showToast(`Order ${payload.order_number} placed! Pay in person at pickup.`,'success');setTimeout(()=>window.location.href=ML_URLS.dashboard,500);}catch(e){showToast(e.message,'error');}
 }
 /* ==========================================================
    PRODUCT RENDERERS
@@ -416,7 +459,8 @@ function updatePriceLabel(val) { const el = document.getElementById('priceValueL
 function resetFilters() {
     document.getElementById('filterCategory').value = '';
     document.getElementById('filterFarmer').value = '';
-    if (document.getElementById('filterMarket')) document.getElementById('filterMarket').value = '';
+    const marketSelect = document.getElementById('filterMarket');
+    if (marketSelect) marketSelect.value = '';
     document.getElementById('filterPriceRange').value = 30;
     document.getElementById('productSearchInput').value = '';
     updatePriceLabel(30);
@@ -438,7 +482,6 @@ function initProducts() {
     const params = new URLSearchParams(window.location.search);
     const catFilter = params.get('cat');
     const qFilter = params.get('q');
-    const marketFilter = params.get('market_id');
 
     const farmerSelect = document.getElementById('filterFarmer');
     if (farmerSelect) {
@@ -447,15 +490,17 @@ function initProducts() {
         farmerSelect.innerHTML = '<option value="">All Farmers</option>' +
             [...farmers.values()].sort((a, b) => a.name.localeCompare(b.name)).map(f => `<option value="${f.id}">${f.name}</option>`).join('');
     }
-    const marketSelect = document.getElementById('filterMarket');
-    if (marketSelect) {
-        marketSelect.innerHTML = '<option value="">All Markets</option>' + sampleMarkets.slice().sort((a, b) => a.name.localeCompare(b.name)).map(market => `<option value="${market.id}">${market.name}</option>`).join('');
-        if (marketFilter) marketSelect.value = marketFilter;
-    }
     if (catFilter) { document.getElementById('filterCategory').value = catFilter; }
     if (qFilter) { const si = document.getElementById('productSearchInput'); if (si) si.value = qFilter; }
     const farmerFilter = params.get('farmer_id');
     if (farmerFilter && farmerSelect) farmerSelect.value = farmerFilter;
+    const marketFilter = params.get('market_id');
+    const marketSelect = document.getElementById('filterMarket');
+    if (marketSelect) {
+        marketSelect.innerHTML = '<option value="">All Markets</option>' +
+            sampleMarkets.map(market => `<option value="${market.id}">${escapeHTML(market.name)}</option>`).join('');
+        if (marketFilter) marketSelect.value = marketFilter;
+    }
     applyProductFilters();
     if (qFilter && !catFilter) showToast('Showing results for your search', 'info');
 }
@@ -473,7 +518,10 @@ function marketCardHTML(m) {
             <h5 class="fw-bold mb-1 mt-2">${m.name}</h5>
             <p class="text-muted small mb-2"><i class="fa-solid fa-location-dot me-1 text-fresh"></i>${m.location}${distance > 0 ? ` · ${milesText(distance)}` : ''}</p>
             <p class="fw-semibold small text-dark mb-4"><i class="fa-regular fa-calendar me-1 text-warning"></i>${m.days}</p>
-            <div class="d-flex gap-2 mt-auto"><a class="btn btn-eco-outline flex-fill" href="${(window.ML_URLS?.farmers || '/farmers')}?market_id=${encodeURIComponent(m.id)}"><i class="fa-solid fa-tractor me-1"></i>Farmers</a><a class="btn btn-eco-primary flex-fill" href="${(window.ML_URLS?.products || '/products')}?market_id=${encodeURIComponent(m.id)}"><i class="fa-solid fa-boxes-stacked me-1"></i>Products</a></div>
+            <div class="d-flex gap-2 mt-auto">
+                <a class="btn btn-eco-outline btn-sm flex-fill" href="${(window.ML_URLS?.farmers || '/farmers')}?market_id=${encodeURIComponent(m.id)}"><i class="fa-solid fa-tractor me-1"></i>Farmers</a>
+                <a class="btn btn-eco-primary btn-sm flex-fill" href="${(window.ML_URLS?.products || '/products')}?market_id=${encodeURIComponent(m.id)}"><i class="fa-solid fa-carrot me-1"></i>Products</a>
+            </div>
         </div></div>`;
 }
 
@@ -499,7 +547,7 @@ function renderMarkets() {
         <div class="eco-card p-3 mb-3">
             <div class="d-flex justify-content-between align-items-start">
                 <div><h6 class="fw-bold mb-1">${m.name}</h6>
-                <p class="small text-muted mb-1"><i class="fa-solid fa-location-dot me-1 text-fresh"></i>${m.location} · ${milesText(m.distance)}</p>
+                <p class="small text-muted mb-1"><i class="fa-solid fa-location-dot me-1 text-fresh"></i>${m.location}${typeof m.distanceComputed === 'number' ? ` · ${milesText(m.distanceComputed)}` : ''}</p>
                 <p class="small text-dark fw-semibold mb-0"><i class="fa-regular fa-clock me-1 text-warning"></i>${m.days}</p></div>
                 <span class="badge bg-mint text-forest">${m.farmersCount}</span>
             </div></div>`).join('');
@@ -511,7 +559,12 @@ function renderMarkets() {
     }
 }
 
-function initMarkets() { renderMarkets(); }
+function initMarkets() {
+    const sortSelect = document.getElementById('marketSortSelect');
+    const requestedSort = new URLSearchParams(window.location.search).get('sort');
+    if (sortSelect && requestedSort === 'near') sortSelect.value = 'near';
+    renderMarkets();
+}
 
 function distanceMiles(latitudeA, longitudeA, latitudeB, longitudeB) {
     const earthRadiusMiles = 3958.8;
@@ -603,10 +656,10 @@ function initCustomerLocationMap() {
 function renderFarmersDirectory() {
     const container = document.getElementById('farmersDirectoryGrid'); if (!container) return;
     const search = (document.getElementById('farmerSearchInput') || { value: '' }).value.trim().toLowerCase();
+    const marketId = document.getElementById('filterFarmerMarket')?.value || '';
     let list = sampleFarmers;
-    const marketFilter = new URLSearchParams(window.location.search).get('market_id');
-    if (marketFilter) list = list.filter(f => String(f.marketId) === String(marketFilter));
     if (search) list = list.filter(f => (f.name + ' ' + f.specialty + ' ' + f.location).toLowerCase().includes(search));
+    if (marketId) list = list.filter(f => String(f.marketId || '') === String(marketId));
 
     container.innerHTML = list.length ? list.map(f => `
         <div class="col-md-4">
@@ -628,7 +681,17 @@ function renderFarmersDirectory() {
     if (lbl) lbl.textContent = `${list.length} farmer${list.length === 1 ? '' : 's'}`;
 }
 
-function initFarmers() { renderFarmersDirectory(); }
+function initFarmers() {
+    const marketSelect = document.getElementById('filterFarmerMarket');
+    if (marketSelect) {
+        marketSelect.innerHTML = '<option value="">All Markets</option>' +
+            sampleMarkets.map(market => `<option value="${market.id}">${escapeHTML(market.name)}</option>`).join('');
+        const marketId = new URLSearchParams(window.location.search).get('market_id');
+        if (marketId) marketSelect.value = marketId;
+    }
+
+    renderFarmersDirectory();
+}
 
 /* ==========================================================
    HOME PAGE
@@ -662,6 +725,7 @@ function openQuickView(productId) {
     const product = state.products.find(p => p.id === productId); if (!product) return;
     quickViewTarget = productId;
     const isFav = state.favorites.includes(productId);
+    const availableMarkets = (product.markets || []).map(market => `<li>${escapeHTML(market.name)} — ${escapeHTML(market.location)}</li>`).join('');
     document.getElementById('quickViewBody').innerHTML = `
         <div class="row g-0">
             <div class="col-md-6"><img src="${product.image}" alt="${product.name}" class="w-100 h-100" style="object-fit:cover; min-height:260px;"></div>
@@ -671,6 +735,7 @@ function openQuickView(productId) {
                     <button class="btn btn-light btn-sm rounded-circle" data-bs-dismiss="modal"><i class="fa-solid fa-xmark"></i></button></div>
                 <h3 class="fw-bold mb-1">${product.name}</h3>
                 <small class="text-muted mb-2"><i class="fa-solid fa-tractor me-1 text-fresh"></i>${product.farmer}</small>
+                <div class="small mb-3"><strong><i class="fa-solid fa-location-dot me-1 text-fresh"></i>Available for pickup at</strong>${availableMarkets ? `<ul class="mb-0 mt-1 ps-4">${availableMarkets}</ul>` : '<div class="text-muted">No approved pickup market is currently assigned.</div>'}</div>
                 <div class="d-flex gap-3 mb-3">
                     <span class="rating text-gold fw-bold"><i class="fa-solid fa-star"></i> ${product.rating.toFixed(1)}</span>
                     <span class="text-muted small"><i class="fa-solid fa-boxes-stacked me-1"></i>${product.stock} in stock</span></div>
@@ -742,7 +807,8 @@ function initDashboard() {
     renderCustomerOrders();
     renderCustomerFavorites();
     renderCustomerReviews();
-    switchCustomerTab('orders');
+    const requestedTab = new URLSearchParams(window.location.search).get('tab');
+    switchCustomerTab(requestedTab === 'profile' ? 'profile' : 'orders');
 }
 
 function renderCustomerStats() {

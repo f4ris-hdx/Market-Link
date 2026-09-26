@@ -62,6 +62,7 @@ Route::middleware(['auth', 'role:farmer'])->prefix('farmer')->name('farmer.')->g
     Route::get('/slots', [FarmerController::class, 'slots'])->name('slots');
     Route::post('/slots', [FarmerController::class, 'updateSlots'])->name('slots.update');
     Route::post('/profile', [FarmerController::class, 'updateProfile'])->name('profile.update');
+    Route::post('/market-change-request', [FarmerController::class, 'requestMarketChange'])->name('market-change-request.store');
 });
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -75,8 +76,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/farmers/{farmer}/verify', [AdminController::class, 'verify'])->name('farmers.verify');
     Route::post('/farmers/{farmer}/suspend', [AdminController::class, 'suspend'])->name('farmers.suspend');
     Route::delete('/farmers/{farmer}', [AdminController::class, 'deleteFarmer'])->name('farmers.delete');
+    Route::post('/farmer-market-change-requests/{marketChangeRequest}/approve', [AdminController::class, 'approveFarmerMarketChange'])->name('farmer-market-change-requests.approve');
+    Route::post('/farmer-market-change-requests/{marketChangeRequest}/reject', [AdminController::class, 'rejectFarmerMarketChange'])->name('farmer-market-change-requests.reject');
 
     Route::get('/products', [AdminController::class, 'products'])->name('products');
+    Route::get('/orders', [AdminController::class, 'orders'])->name('orders');
     Route::get('/products/create', [AdminController::class, 'createProduct'])->name('products.create');
     Route::post('/products', [AdminController::class, 'storeProduct'])->name('products.store');
     Route::get('/products/{product}/edit', [AdminController::class, 'editProduct'])->name('products.edit');

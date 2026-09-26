@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Announcement;
 use App\Models\Category;
 use App\Models\Farmer;
+use App\Models\FarmerMarketChangeRequest;
 use App\Models\Market;
 use App\Models\Order;
 use App\Models\Product;
@@ -12,6 +13,7 @@ use App\Models\Review;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 
@@ -179,8 +181,48 @@ class AdminController extends Controller
         }
 
         $farmers = $query->get();
+        $marketChangeRequests = FarmerMarketChangeRequest::query()
+            ->with(['farmer:id,name,owner_name', 'currentMarket:id,name', 'requestedMarket:id,name', 'requester:id,name'])
+            ->where('status', 'pending')
+            ->latest()
+            ->limit(50)
+            ->get();
 
-        return view('admin.farmers', compact('farmers', 'type'));
+        return view('admin.farmers', compact('farmers', 'type', 'marketChangeRequests'));
+    }
+
+    public function approveFarmerMarketChange(FarmerMarketChangeRequest $marketChangeRequest): RedirectResponse
+    {
+        DB::transaction(function () use ($marketChangeRequest): void {
+            $request = FarmerMarketChangeRequest::query()->lockForUpdate()->findOrFail($marketChangeRequest->id);
+            abort_unless($request->status === 'pending', 422, 'This market change request has already been reviewed.');
+
+            $farmer = Farmer::query()->lockForUpdate()->findOrFail($request->farmer_id);
+            $farmer->update(['market_id' => $request->requested_market_id]);
+            $request->update([
+                'status' => 'approved',
+                'reviewed_by' => auth()->id(),
+                'reviewed_at' => now(),
+            ]);
+        });
+
+        return back()->with('status', 'Market change approved. The farmer is now assigned to the requested market.');
+    }
+
+    public function rejectFarmerMarketChange(FarmerMarketChangeRequest $marketChangeRequest): RedirectResponse
+    {
+        DB::transaction(function () use ($marketChangeRequest): void {
+            $request = FarmerMarketChangeRequest::query()->lockForUpdate()->findOrFail($marketChangeRequest->id);
+            abort_unless($request->status === 'pending', 422, 'This market change request has already been reviewed.');
+
+            $request->update([
+                'status' => 'rejected',
+                'reviewed_by' => auth()->id(),
+                'reviewed_at' => now(),
+            ]);
+        });
+
+        return back()->with('status', 'Market change request rejected. The farmer remains at their current market.');
     }
 
     public function createFarmer(): View
@@ -304,7 +346,13 @@ class AdminController extends Controller
         unset($data['market_id']);
 
         $product = Product::create($data);
-        $product->markets()->sync([$marketId]);
+        $product->markets()->sync([
+            $marketId => [
+                'status' => 'approved',
+                'reviewed_at' => now(),
+                'reviewed_by' => auth()->id(),
+            ],
+        ]);
 
         return redirect()->route('admin.products')->with('status', 'Product created.');
     }
@@ -327,7 +375,13 @@ class AdminController extends Controller
         unset($data['market_id']);
 
         $product->update($data);
-        $product->markets()->sync([$marketId]);
+        $product->markets()->sync([
+            $marketId => [
+                'status' => 'approved',
+                'reviewed_at' => now(),
+                'reviewed_by' => auth()->id(),
+            ],
+        ]);
 
         return redirect()->route('admin.products')->with('status', 'Product updated.');
     }
@@ -357,6 +411,44 @@ class AdminController extends Controller
         $product->delete();
 
         return back()->with('status', 'Product deleted.');
+    }
+
+    public function orders(Request $request): View
+    {
+        $query = Order::query()->with([
+            'user:id,name,email,phone',
+            'market:id,name,location',
+            'items.product.farmer:id,name',
+        ]);
+
+        if ($request->filled('market_id')) {
+            $query->where('market_id', $request->integer('market_id'));
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->string('status')->toString());
+        }
+
+        if ($request->filled('farmer_id')) {
+            $farmerId = $request->integer('farmer_id');
+            $query->whereHas('items.product', fn ($productQuery) => $productQuery->where('farmer_id', $farmerId));
+        }
+
+        if ($request->filled('search')) {
+            $term = $request->string('search')->toString();
+            $query->where(function ($orderQuery) use ($term): void {
+                $orderQuery->where('order_number', 'like', "%{$term}%")
+                    ->orWhere('pickup_name', 'like', "%{$term}%")
+                    ->orWhereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', "%{$term}%")->orWhere('email', 'like', "%{$term}%"));
+            });
+        }
+
+        $orders = $query->orderByDesc('placed_at')->paginate(20)->withQueryString();
+        $markets = Market::query()->orderBy('name')->get(['id', 'name']);
+        $farmers = Farmer::query()->orderBy('name')->get(['id', 'name']);
+        $statuses = ['Placed', 'Accepted', 'Ready', 'Picked Up', 'Rejected', 'Cancelled'];
+
+        return view('admin.orders', compact('orders', 'markets', 'farmers', 'statuses'));
     }
 
     // -------------------- Markets & announcements --------------------

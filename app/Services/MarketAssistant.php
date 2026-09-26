@@ -112,7 +112,7 @@ class MarketAssistant
         $service = config('services.gemini');
         $url = rtrim($service['base_url'], '/').'/'.$service['version'].'/models/'.$service['model'].':generateContent';
 
-        $response = Http::connectTimeout(3)
+        $response = Http::connectTimeout((int) $service['connect_timeout'])
             ->timeout((int) $service['timeout'])
             ->withOptions(['verify' => $service['verify']])
             ->retry([200, 500], 1, fn ($exception) => $exception instanceof ConnectionException || ($exception instanceof RequestException && ($exception->response->serverError() || $exception->response->status() === 429)))

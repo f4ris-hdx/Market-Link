@@ -44,4 +44,9 @@ class Farmer extends Model
     {
         return $this->hasMany(FavoriteFarmer::class);
     }
+
+    public function marketChangeRequests(): HasMany
+    {
+        return $this->hasMany(FarmerMarketChangeRequest::class);
+    }
 }

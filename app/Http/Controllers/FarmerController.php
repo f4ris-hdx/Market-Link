@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreProductRequest;
 use App\Models\Category;
 use App\Models\Farmer;
+use App\Models\FarmerMarketChangeRequest;
 use App\Models\Market;
 use App\Models\Order;
 use App\Models\Product;
@@ -61,8 +62,13 @@ class FarmerController extends Controller
             ->get();
         $reviewCount = $farmer->reviews()->where('status', 'published')->count();
         $averageRating = (float) ($farmer->reviews()->where('status', 'published')->avg('rating') ?? $farmer->rating);
+        $markets = Market::query()->orderBy('name')->get(['id', 'name', 'location']);
+        $marketChangeRequest = $farmer->marketChangeRequests()
+            ->with(['currentMarket:id,name', 'requestedMarket:id,name'])
+            ->latest()
+            ->first();
 
-        return view('farmer.dashboard', compact('farmer', 'orders', 'revenue', 'ordersCount', 'productCount', 'reviews', 'reviewCount', 'averageRating'));
+        return view('farmer.dashboard', compact('farmer', 'orders', 'revenue', 'ordersCount', 'productCount', 'reviews', 'reviewCount', 'averageRating', 'markets', 'marketChangeRequest'));
     }
 
     public function products(): View
@@ -100,7 +106,13 @@ class FarmerController extends Controller
         unset($data['market_id']);
 
         $product = $farmer->products()->create($data);
-        $product->markets()->sync([$marketId]);
+        $product->markets()->sync([
+            $marketId => [
+                'status' => 'approved',
+                'reviewed_at' => now(),
+                'reviewed_by' => null,
+            ],
+        ]);
 
         return redirect()->route('farmer.products')->with('status', 'Product added.');
     }
@@ -143,7 +155,13 @@ class FarmerController extends Controller
         unset($data['market_id']);
 
         $product->update($data);
-        $product->markets()->sync([$marketId]);
+        $product->markets()->sync([
+            $marketId => [
+                'status' => 'approved',
+                'reviewed_at' => now(),
+                'reviewed_by' => null,
+            ],
+        ]);
 
         return redirect()->route('farmer.products')->with('status', 'Product updated.');
     }
@@ -220,6 +238,33 @@ class FarmerController extends Controller
         $farmer->user?->update(['name' => $data['owner_name']]);
 
         return back()->with('status', 'Farmer profile updated.');
+    }
+
+    public function requestMarketChange(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'requested_market_id' => ['required', 'integer', 'exists:markets,id'],
+        ]);
+
+        DB::transaction(function () use ($data): void {
+            $farmer = Farmer::query()
+                ->where('user_id', auth()->id())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            abort_if((int) $farmer->market_id === (int) $data['requested_market_id'], 422, 'That is already your assigned market.');
+            abort_if($farmer->marketChangeRequests()->where('status', 'pending')->exists(), 422, 'You already have a pending market change request.');
+
+            FarmerMarketChangeRequest::create([
+                'farmer_id' => $farmer->id,
+                'current_market_id' => $farmer->market_id,
+                'requested_market_id' => $data['requested_market_id'],
+                'requested_by' => auth()->id(),
+                'status' => 'pending',
+            ]);
+        });
+
+        return back()->with('status', 'Your market change request was sent to the administrator. Your current market stays active until it is approved.');
     }
 
     public function slots(): View

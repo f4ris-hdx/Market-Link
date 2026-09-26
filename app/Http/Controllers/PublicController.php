@@ -19,7 +19,11 @@ class PublicController extends Controller
 
     private function frontendData(): array
     {
-        $products = Product::with(['farmer', 'category', 'markets'])
+        $products = Product::with([
+            'farmer',
+            'category',
+            'markets' => fn ($query) => $query->wherePivot('status', 'approved'),
+        ])
             ->where('stock', '>', 0)
             ->where('status', 'approved')
             ->whereHas('farmer', fn ($query) => $query->where('status', 'verified'))
@@ -29,7 +33,12 @@ class PublicController extends Controller
                 'id' => $p->id,
                 'name' => $p->name,
                 'farmerId' => $p->farmer_id,
-                'marketIds' => $p->markets->pluck('id')->map(fn ($id) => (int) $id)->values()->all(),
+                'marketIds' => $p->markets->pluck('id')->map(fn ($id) => (int) $id)->values(),
+                'markets' => $p->markets->map(fn (Market $market) => [
+                    'id' => $market->id,
+                    'name' => $market->name,
+                    'location' => $market->location,
+                ])->values(),
                 'category' => $p->category?->name ?? 'Other',
                 'farmer' => $p->farmer?->name ?? 'Local Farmer',
                 'price' => (float) $p->price,
@@ -52,8 +61,8 @@ class PublicController extends Controller
 
         $farmers = Farmer::with('market')->where('status', 'verified')->orderBy('name')->get()->map(fn (Farmer $f) => [
             'id' => $f->id,
-            'marketId' => $f->market_id,
             'name' => $f->name,
+            'marketId' => $f->market_id,
             'location' => $f->location,
             'specialty' => $f->specialty ?: 'Local farm produce',
             'rating' => (float) ($f->rating ?? 0),

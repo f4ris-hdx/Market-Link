@@ -6,6 +6,32 @@
     <a class="btn btn-eco-primary" href="{{ route('admin.farmers.create') }}"><i class="fa-solid fa-user-plus me-1"></i>Create Farmer</a>
 </div>
 <form method="GET" class="eco-card p-3 mt-4"><div class="row g-2 align-items-end"><div class="col-md-5"><label class="form-label small fw-semibold">Profile source</label><select name="type" class="form-select"><option value="">All profiles</option><option value="registered" @selected(($type ?? '') === 'registered')>Registered accounts</option><option value="sample" @selected(($type ?? '') === 'sample')>Sample/demo data</option></select></div><div class="col-md-4"><label class="form-label small fw-semibold">Status</label><select name="status" class="form-select"><option value="">All statuses</option><option value="pending" @selected(request('status') === 'pending')>Pending</option><option value="verified" @selected(request('status') === 'verified')>Verified</option><option value="suspended" @selected(request('status') === 'suspended')>Suspended</option></select></div><div class="col-md-3"><button class="btn btn-eco-outline w-100" type="submit"><i class="fa-solid fa-filter me-1"></i>Apply Filters</button></div></div></form>
+<div class="eco-card p-4 mt-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <div><h4 class="fw-bold mb-1"><i class="fa-solid fa-map-location-dot text-fresh me-2"></i>Market change requests</h4><p class="small text-muted mb-0">Review farmer requests before changing their assigned market.</p></div>
+        <span class="badge bg-warning text-dark">{{ $marketChangeRequests->count() }} pending</span>
+    </div>
+    @if($marketChangeRequests->isEmpty())
+        <p class="small text-muted mb-0">There are no pending market change requests.</p>
+    @else
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead><tr><th>Farmer</th><th>Current market</th><th>Requested market</th><th>Requested by</th><th></th></tr></thead>
+                <tbody>
+                @foreach($marketChangeRequests as $marketRequest)
+                    <tr>
+                        <td><strong>{{ $marketRequest->farmer?->name ?? 'Farmer unavailable' }}</strong><div class="small text-muted">{{ $marketRequest->farmer?->owner_name }}</div></td>
+                        <td>{{ $marketRequest->currentMarket?->name ?? 'Not assigned' }}</td>
+                        <td>{{ $marketRequest->requestedMarket?->name ?? 'Market unavailable' }}<div class="small text-muted">{{ $marketRequest->requestedMarket?->location }}</div></td>
+                        <td>{{ $marketRequest->requester?->name ?? 'Farmer' }}<div class="small text-muted">{{ $marketRequest->created_at->format('M j, Y g:i A') }}</div></td>
+                        <td><div class="d-flex gap-2"><form method="POST" action="{{ route('admin.farmer-market-change-requests.approve', $marketRequest) }}">@csrf<button class="btn btn-sm btn-eco-primary" type="submit"><i class="fa-solid fa-check me-1"></i>Approve</button></form><form method="POST" action="{{ route('admin.farmer-market-change-requests.reject', $marketRequest) }}">@csrf<button class="btn btn-sm btn-outline-danger" type="submit"><i class="fa-solid fa-xmark me-1"></i>Reject</button></form></div></td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
+</div>
 <div class="eco-card p-3 mt-3">
 @if($farmers->isEmpty())
     <div class="text-center py-5 text-muted"><div class="icon-chip mx-auto mb-3"><i class="fa-solid fa-tractor"></i></div><p class="mb-0">No farmer profiles found.</p></div>

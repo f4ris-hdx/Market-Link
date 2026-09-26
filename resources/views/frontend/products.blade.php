@@ -114,15 +114,15 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Farmer Stall</label>
-                        <select id="filterFarmer" class="form-select" onchange="applyProductFilters()">
-                            <option value="">All Farmers</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
                         <label class="form-label">Market</label>
                         <select id="filterMarket" class="form-select" onchange="applyProductFilters()">
                             <option value="">All Markets</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Farmer Stall</label>
+                        <select id="filterFarmer" class="form-select" onchange="applyProductFilters()">
+                            <option value="">All Farmers</option>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -189,14 +189,7 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Pickup Market Hub</label>
-                                <select class="form-select" id="checkoutMarket" required>
-                                    <option value="Central Farmers Hub">Central Farmers Hub (Sat 8 AM - 1 PM)</option>
-                                    <option value="Green Valley Eco Market">Green Valley Eco Market (Sun 9 AM - 2 PM)</option>
-                                    <option value="West End Organics Fair">West End Organics Fair (Wed 3 PM - 7 PM)</option>
-                                    <option value="Riverside Sunday Market">Riverside Sunday Market (Sun 8 AM - 12 PM)</option>
-                                    <option value="Harvest Square Hub">Harvest Square Hub (Sat 9 AM - 1 PM)</option>
-                                    <option value="Summer Nights Bazaar">Summer Nights Bazaar (Thu 5 PM - 9 PM)</option>
-                                </select>
+                                <select class="form-select" id="checkoutMarket" required></select>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Pickup Time Slot</label>

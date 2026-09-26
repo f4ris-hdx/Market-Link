@@ -1297,6 +1297,20 @@ body[data-role='customer'] .navbar-market .id-customer-action { display: flex; }
     .role-portal-body .navbar-market .navbar-collapse { margin-top: 12px; }
     .role-portal-body .nav-actions { width: 100%; flex-wrap: wrap; }
 }
+@media (min-width: 992px) and (max-width: 1199.98px) {
+    .role-portal-admin .navbar-market .navbar-collapse {
+        background: rgba(16, 55, 41, 0.99);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 18px;
+        padding: 16px;
+        margin-top: 12px;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
+    }
+    .role-portal-admin .navbar-market .navbar-collapse .navbar-nav { gap: 2px; }
+    .role-portal-admin .navbar-market .navbar-collapse .nav-link { padding: 10px 8px; font-size: 1rem; border-radius: 10px; }
+    .role-portal-admin .navbar-market .navbar-collapse > .d-flex { flex-wrap: wrap; }
+    .role-portal-admin .nav-actions { width: 100%; margin-left: 0; justify-content: flex-start; }
+}
 
 
 .auth-role-banner { display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid #e1ebe5; background:var(--pale-mint); border-radius:16px; }

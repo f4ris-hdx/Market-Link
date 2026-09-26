@@ -12,7 +12,7 @@
     @stack('styles')
 </head>
 <body data-role="admin" class="role-portal-body role-portal-admin">
-    <nav class="navbar navbar-expand-lg navbar-dark navbar-market sticky-top" id="mainNav">
+    <nav class="navbar navbar-expand-xl navbar-dark navbar-market sticky-top" id="mainNav">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="{{ route('admin.dashboard') }}">
                 <span class="brand-logo"><i class="fa-solid fa-basket-shopping"></i></span>
@@ -27,11 +27,11 @@
                     <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.users*') ? 'active' : '' }}" href="{{ route('admin.users') }}"><i class="fa-solid fa-users-gear me-1"></i>Users</a></li>
                     <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.farmers*') ? 'active' : '' }}" href="{{ route('admin.farmers') }}"><i class="fa-solid fa-tractor me-1"></i>Farmers</a></li>
                     <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.products*') ? 'active' : '' }}" href="{{ route('admin.products') }}"><i class="fa-solid fa-boxes-stacked me-1"></i>Products</a></li>
+                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.orders*') ? 'active' : '' }}" href="{{ route('admin.orders') }}"><i class="fa-solid fa-receipt me-1"></i>Orders</a></li>
                     <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.markets*') ? 'active' : '' }}" href="{{ route('admin.markets') }}"><i class="fa-solid fa-map-location-dot me-1"></i>Markets</a></li>
                     <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.announcements*') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}#announcements"><i class="fa-solid fa-bullhorn me-1"></i>Announcements</a></li>
                 </ul>
                 <div class="d-flex align-items-center gap-2 nav-actions">
-                    <a class="btn btn-eco-outline btn-sm" href="{{ route('home') }}"><i class="fa-solid fa-arrow-up-right-from-square me-1"></i>View Site</a>
                     <div class="dropdown">
                         <button class="btn btn-eco-primary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fa-solid fa-user-shield"></i>{{ auth()->user()->name }}

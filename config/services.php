@@ -40,7 +40,8 @@ return [
         'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com'),
         'version' => env('GEMINI_API_VERSION', 'v1beta'),
         'model' => env('GEMINI_MODEL', 'gemini-3.8-flash'),
-        'timeout' => env('GEMINI_TIMEOUT', 12),
+        'connect_timeout' => env('GEMINI_CONNECT_TIMEOUT', 10),
+        'timeout' => env('GEMINI_TIMEOUT', 30),
         'verify' => filter_var(env('GEMINI_SSL_VERIFY', true), FILTER_VALIDATE_BOOLEAN),
     ],
 
