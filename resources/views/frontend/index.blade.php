@@ -39,24 +39,18 @@
 
                 <div class="d-flex align-items-center gap-2 flex-wrap nav-actions">
                     <div class="dropdown">
-                        <button class="btn btn-outline-light dropdown-toggle rounded-pill btn-sm px-3" type="button" data-bs-toggle="dropdown">
-                            <i class="fa-solid fa-user-gear me-1"></i>
+                        <button class="btn btn-eco-primary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+                            <i class="fa-solid fa-user-gear"></i>
                             @auth
-                                {{ ucfirst(auth()->user()->role) }}: <span id="currentRoleLabel" class="fw-bold text-warning">{{ auth()->user()->name }}</span>
+                                <span id="currentRoleLabel" class="fw-bold">{{ auth()->user()->name }}</span>
                             @else
-                                <span id="currentRoleLabel" class="fw-bold text-warning">Guest</span>
+                                <span id="currentRoleLabel" class="fw-bold">Guest</span>
                             @endauth
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow border-0">
                             @auth
                                 <li><h6 class="dropdown-header">Your MarketLink</h6></li>
-                                <li><a class="dropdown-item" href="{{ auth()->user()->isFarmer() ? route('farmer.dashboard') : (auth()->user()->isAdmin() ? route('admin.dashboard') : route('dashboard')) }}"><i class="fa-solid fa-gauge-high text-success me-2"></i>{{ auth()->user()->isFarmer() ? 'Farmer Workspace' : (auth()->user()->isAdmin() ? 'Admin Portal' : 'My Dashboard') }}</a></li>
-                                @if(auth()->user()->isFarmer())
-                                    <li><a class="dropdown-item" href="{{ route('farmer.dashboard') }}"><i class="fa-solid fa-tractor text-primary me-2"></i>Farmer Workspace</a></li>
-                                @endif
-                                @if(auth()->user()->isAdmin())
-                                    <li><a class="dropdown-item" href="{{ route('admin.dashboard') }}"><i class="fa-solid fa-user-shield text-danger me-2"></i>Admin Portal</a></li>
-                                @endif
+                                <li><a class="dropdown-item" href="{{ auth()->user()->isFarmer() ? route('farmer.dashboard') : (auth()->user()->isAdmin() ? route('admin.dashboard') : route('dashboard')) }}"><i class="fa-solid fa-gauge-high text-success me-2"></i>{{ auth()->user()->isFarmer() ? 'Farmer Dashboard' : (auth()->user()->isAdmin() ? 'Admin Dashboard' : 'Dashboard') }}</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><form method="POST" action="{{ route('logout') }}">@csrf<button class="dropdown-item text-danger" type="submit"><i class="fa-solid fa-right-from-bracket me-2"></i>Sign Out</button></form></li>
                             @else
@@ -75,10 +69,6 @@
                     <button class="nav-icon-btn id-customer-action" onclick="openNotificationsModal()" title="Notifications">
                         <i class="fa-regular fa-bell"></i>
                     </button>
-
-                    <a class="btn btn-eco-primary btn-sm px-3 id-customer-action my-portal-btn" href="{{ auth()->check() ? (auth()->user()->isFarmer() ? route('farmer.dashboard') : (auth()->user()->isAdmin() ? route('admin.dashboard') : route('dashboard'))) : route('login') }}">
-                        <i class="fa-solid fa-user-circle me-1"></i> My Portal
-                    </a>
                 </div>
             </div>
         </div>

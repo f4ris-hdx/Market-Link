@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\OrderPlacedMail;
 use App\Models\Market;
 use App\Models\Order;
 use App\Models\Product;
@@ -9,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -191,6 +193,8 @@ class CartController extends Controller
         }
 
         session()->forget('cart');
+
+        Mail::to(auth()->user()->email)->send(new OrderPlacedMail($order->load('user')));
 
         if ($request->expectsJson()) {
             return response()->json(['ok' => true, 'order_number' => $order->order_number]);

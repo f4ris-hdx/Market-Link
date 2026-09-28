@@ -70,9 +70,6 @@
                     <button class="nav-icon-btn id-customer-action" onclick="openNotificationsModal()" title="Notifications">
                         <i class="fa-regular fa-bell"></i>
                     </button>
-                    <a class="btn btn-eco-primary btn-sm px-3 id-customer-action my-portal-btn" href="{{ auth()->check() ? (auth()->user()->isFarmer() ? route('farmer.dashboard') : (auth()->user()->isAdmin() ? route('admin.dashboard') : route('dashboard'))) : route('login') }}">
-                        <i class="fa-solid fa-user-circle me-1"></i> My Portal
-                    </a>
                 </div>
             </div>
         </div>

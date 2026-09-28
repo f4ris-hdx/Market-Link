@@ -3,20 +3,20 @@
 @section('content')
 <div class="page-hero mb-4"><div class="container"><span class="hero-badge"><i class="fa-solid fa-shield-halved"></i> Platform Administration</span><h1 class="hero-title h2 mt-3">MarketLink Admin Portal</h1><p class="hero-lead">Manage accounts, farmer approvals, products, markets and marketplace content from one workspace.</p></div></div>
 
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-4 admin-stat-grid">
     <div class="col-6 col-lg-2"><div class="stat-card h-100"><div class="stat-icon blue"><i class="fa-solid fa-users"></i></div><div><small>Total Users</small><h3 class="mb-0">{{ number_format($metrics['users']) }}</h3></div></div></div>
     <div class="col-6 col-lg-2"><div class="stat-card h-100"><div class="stat-icon green"><i class="fa-solid fa-tractor"></i></div><div><small>Farmers</small><h3 class="mb-0">{{ number_format($metrics['farmers']) }}</h3></div></div></div>
     <div class="col-6 col-lg-2"><div class="stat-card h-100"><div class="stat-icon gold"><i class="fa-solid fa-store"></i></div><div><small>Markets</small><h3 class="mb-0">{{ number_format($metrics['markets']) }}</h3></div></div></div>
     <div class="col-6 col-lg-2"><div class="stat-card h-100"><div class="stat-icon red"><i class="fa-solid fa-boxes-stacked"></i></div><div><small>Products</small><h3 class="mb-0">{{ number_format($metrics['products']) }}</h3></div></div></div>
     <div class="col-6 col-lg-2"><div class="stat-card h-100"><div class="stat-icon blue"><i class="fa-solid fa-receipt"></i></div><div><small>Orders</small><h3 class="mb-0">{{ number_format($metrics['orders']) }}</h3></div></div></div>
-    <div class="col-6 col-lg-2"><div class="stat-card h-100"><div class="stat-icon gold"><i class="fa-solid fa-sack-dollar"></i></div><div><small>Order Value</small><h3 class="mb-0">${{ number_format($metrics['revenue'], 2) }}</h3></div></div></div>
+    <div class="col-6 col-lg-2"><div class="stat-card h-100"><div class="stat-icon gold"><i class="fa-solid fa-dollar-sign"></i></div><div><small>Order Value</small><h3 class="mb-0">${{ number_format($metrics['revenue'], 2) }}</h3></div></div></div>
 </div>
 
-<div class="row g-3 mb-4">
-    <div class="col-md-3"><a class="eco-card p-4 h-100 d-block text-decoration-none" href="{{ route('admin.users') }}"><div class="icon-chip mb-3"><i class="fa-solid fa-users-gear"></i></div><h5 class="fw-bold text-forest">Manage Users</h5><p class="small text-muted mb-0">Full account CRUD, roles and access status.</p></a></div>
+<div class="row g-3 mb-4 admin-quick-links">
+    <div class="col-md-3"><a class="eco-card p-4 h-100 d-block text-decoration-none" href="{{ route('admin.users') }}"><div class="icon-chip mb-3"><i class="fa-solid fa-user-gear"></i></div><h5 class="fw-bold text-forest">Manage Users</h5><p class="small text-muted mb-0">Full account CRUD, roles and access status.</p></a></div>
     <div class="col-md-3"><a class="eco-card p-4 h-100 d-block text-decoration-none" href="{{ route('admin.farmers') }}"><div class="icon-chip mb-3"><i class="fa-solid fa-user-check"></i></div><h5 class="fw-bold text-forest">Manage Farmers</h5><p class="small text-muted mb-0">Create, edit, verify, suspend and remove profiles.</p></a></div>
     <div class="col-md-3"><a class="eco-card p-4 h-100 d-block text-decoration-none" href="{{ route('admin.products') }}"><div class="icon-chip mb-3"><i class="fa-solid fa-boxes-stacked"></i></div><h5 class="fw-bold text-forest">Manage Products</h5><p class="small text-muted mb-0">Full product CRUD and listing moderation.</p></a></div>
-    <div class="col-md-3"><a class="eco-card p-4 h-100 d-block text-decoration-none" href="{{ route('admin.markets') }}"><div class="icon-chip mb-3"><i class="fa-solid fa-map-location-dot"></i></div><h5 class="fw-bold text-forest">Manage Markets</h5><p class="small text-muted mb-0">Create, edit and remove market hubs.</p></a></div>
+    <div class="col-md-3"><a class="eco-card p-4 h-100 d-block text-decoration-none" href="{{ route('admin.markets') }}"><div class="icon-chip mb-3"><i class="fa-solid fa-location-dot"></i></div><h5 class="fw-bold text-forest">Manage Markets</h5><p class="small text-muted mb-0">Create, edit and remove market hubs.</p></a></div>
 </div>
 
 <div class="row g-4">

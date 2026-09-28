@@ -70,9 +70,6 @@
                     <button class="nav-icon-btn id-customer-action" onclick="openNotificationsModal()" title="Notifications">
                         <i class="fa-regular fa-bell"></i>
                     </button>
-                    <a class="btn btn-eco-primary btn-sm px-3 id-customer-action my-portal-btn" href="{{ auth()->check() ? (auth()->user()->isFarmer() ? route('farmer.dashboard') : (auth()->user()->isAdmin() ? route('admin.dashboard') : route('dashboard'))) : route('login') }}">
-                        <i class="fa-solid fa-user-circle me-1"></i> My Portal
-                    </a>
                 </div>
             </div>
         </div>
@@ -141,12 +138,16 @@
             <div class="col-lg-9">
                 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                     <span class="text-muted fw-semibold" id="productsCountLabel">Showing all products</span>
-                    <select class="form-select w-auto" id="sortProductsSelect" onchange="applyProductFilters()">
-                        <option value="popular">Sort by Popularity</option>
-                        <option value="low">Price: Low to High</option>
-                        <option value="high">Price: High to Low</option>
-                        <option value="rating">Top Rated</option>
-                    </select>
+                    <div class="d-flex gap-2 align-items-center flex-wrap">
+                        <select class="form-select w-auto" id="sortProductsSelect" onchange="applyProductFilters()">
+                            <option value="popular">Sort by Popularity</option>
+                            <option value="near">Nearest First</option>
+                            <option value="low">Price: Low to High</option>
+                            <option value="high">Price: High to Low</option>
+                            <option value="rating">Top Rated</option>
+                        </select>
+                        <button class="btn btn-eco-outline btn-sm" type="button" onclick="findNearbyMarkets()"><i class="fa-solid fa-location-crosshairs me-1"></i>Near me</button>
+                    </div>
                 </div>
                 <div class="row g-4" id="mainProductsGrid"></div>
             </div>

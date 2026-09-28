@@ -47,7 +47,7 @@
                         <div class="col-12 mt-4">
                             <div class="d-flex justify-content-between align-items-center border-top pt-3">
                                 <a href="{{ route('cart.index') }}" class="btn btn-eco-outline btn-sm"><i class="fa-solid fa-arrow-left me-1"></i>Back to Basket</a>
-                                <button type="submit" class="btn btn-eco-primary"><i class="fa-solid fa-bag-check me-1"></i>Place Pre-Order</button>
+                                <button type="submit" class="btn btn-eco-primary"><i class="fa-solid fa-bag-shopping me-1"></i>Place Pre-Order</button>
                             </div>
                         </div>
                     </div>

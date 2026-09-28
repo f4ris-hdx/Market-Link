@@ -395,10 +395,39 @@ function emptyStateHTML(message) {
         <p class="text-muted fw-semibold">${message}</p></div>`;
 }
 
+function applyCustomerLocationToProducts(list) {
+    const user = ML_BACKEND.user || {};
+    const latitude = Number(user.latitude);
+    const longitude = Number(user.longitude);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        return [...list];
+    }
+
+    return [...list].map((product) => {
+        const coordinates = (Array.isArray(product.markets) ? product.markets : [])
+            .map((market) => {
+                const marketLatitude = Number(market.latitude ?? market.lat ?? null);
+                const marketLongitude = Number(market.longitude ?? market.lng ?? null);
+                if (!Number.isFinite(marketLatitude) || !Number.isFinite(marketLongitude)) {
+                    return null;
+                }
+
+                return {
+                    distance: distanceMiles(latitude, longitude, marketLatitude, marketLongitude),
+                };
+            })
+            .filter(Boolean);
+
+        const nearestDistance = coordinates.length ? Math.min(...coordinates.map(item => item.distance)) : Number.POSITIVE_INFINITY;
+        return { ...product, _distanceToUser: Number.isFinite(nearestDistance) ? nearestDistance : Number.POSITIVE_INFINITY };
+    }).sort((a, b) => a._distanceToUser - b._distanceToUser);
+}
+
 function renderProductsGrid(productsList, targetElementId) {
     const container = document.getElementById(targetElementId);
     if (!container) return;
-    container.innerHTML = productsList.length ? productsList.map(productCardHTML).join('') : emptyStateHTML('No fresh items matched your search criteria.');
+    const prepared = applyCustomerLocationToProducts(productsList);
+    container.innerHTML = prepared.length ? prepared.map(productCardHTML).join('') : emptyStateHTML('No fresh items matched your search criteria.');
 }
 
 function renderCategories() {
@@ -442,10 +471,20 @@ function applyProductFilters() {
         const mSearch = !search || (p.name + ' ' + p.farmer + ' ' + p.category).toLowerCase().includes(search);
         return mCat && mFarmer && mMarket && mPrice && mSearch;
     });
-    if (sort === 'low') filtered.sort((a, b) => a.price - b.price);
-    else if (sort === 'high') filtered.sort((a, b) => b.price - a.price);
-    else if (sort === 'rating') filtered.sort((a, b) => b.rating - a.rating);
-    else filtered.sort((a, b) => b.rating * b.stock - a.rating * a.stock);
+
+    const user = ML_BACKEND.user || {};
+    const hasSavedLocation = Number.isFinite(Number(user.latitude)) && Number.isFinite(Number(user.longitude));
+    if (sort === 'near' && hasSavedLocation) {
+        filtered = applyCustomerLocationToProducts(filtered);
+    } else if (sort === 'low') {
+        filtered.sort((a, b) => a.price - b.price);
+    } else if (sort === 'high') {
+        filtered.sort((a, b) => b.price - a.price);
+    } else if (sort === 'rating') {
+        filtered.sort((a, b) => b.rating - a.rating);
+    } else {
+        filtered.sort((a, b) => b.rating * b.stock - a.rating * a.stock);
+    }
 
     renderProductsGrid(filtered, 'mainProductsGrid');
     renderFilterChips();
@@ -501,6 +540,12 @@ function initProducts() {
             sampleMarkets.map(market => `<option value="${market.id}">${escapeHTML(market.name)}</option>`).join('');
         if (marketFilter) marketSelect.value = marketFilter;
     }
+
+    const productSort = document.getElementById('sortProductsSelect');
+    if (productSort && Number.isFinite(Number(ML_BACKEND.user?.latitude)) && Number.isFinite(Number(ML_BACKEND.user?.longitude))) {
+        productSort.value = 'near';
+    }
+
     applyProductFilters();
     if (qFilter && !catFilter) showToast('Showing results for your search', 'info');
 }
@@ -532,12 +577,14 @@ function renderMarkets() {
     const sortBy = document.getElementById('marketSortSelect') ? document.getElementById('marketSortSelect').value : 'name';
 
     let list = [...sampleMarkets];
-    if (!customerCoordinates && ML_BACKEND.user?.latitude && ML_BACKEND.user?.longitude) {
-        customerCoordinates = { latitude: Number(ML_BACKEND.user.latitude), longitude: Number(ML_BACKEND.user.longitude) };
+    const userLatitude = Number(ML_BACKEND.user?.latitude);
+    const userLongitude = Number(ML_BACKEND.user?.longitude);
+    if (!customerCoordinates && Number.isFinite(userLatitude) && Number.isFinite(userLongitude)) {
+        customerCoordinates = { latitude: userLatitude, longitude: userLongitude };
     }
     if (search) list = list.filter(m => (m.name + ' ' + m.location + ' ' + m.days).toLowerCase().includes(search));
     if (customerCoordinates) {
-        list = list.map(market => ({ ...market, distanceComputed: market.latitude && market.longitude ? distanceMiles(customerCoordinates.latitude, customerCoordinates.longitude, market.latitude, market.longitude) : null }));
+        list = list.map(market => ({ ...market, distanceComputed: Number.isFinite(Number(market.latitude)) && Number.isFinite(Number(market.longitude)) ? distanceMiles(customerCoordinates.latitude, customerCoordinates.longitude, Number(market.latitude), Number(market.longitude)) : null }));
     }
     if (sortBy === 'farmers') list.sort((a, b) => b.farmersCount - a.farmersCount);
     else if (sortBy === 'near') list.sort((a, b) => (a.distanceComputed ?? Number.POSITIVE_INFINITY) - (b.distanceComputed ?? Number.POSITIVE_INFINITY));
@@ -583,10 +630,17 @@ function findNearbyMarkets() {
 
     navigator.geolocation.getCurrentPosition(position => {
         customerCoordinates = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+        if (ML_BACKEND.user) {
+            ML_BACKEND.user.latitude = position.coords.latitude;
+            ML_BACKEND.user.longitude = position.coords.longitude;
+        }
         const sort = document.getElementById('marketSortSelect');
         if (sort) sort.value = 'near';
+        const productSort = document.getElementById('sortProductsSelect');
+        if (productSort) productSort.value = 'near';
         renderMarkets();
-        showToast('Markets sorted by distance from you.', 'success');
+        if (typeof applyProductFilters === 'function') applyProductFilters();
+        showToast('Markets and products sorted by distance from you.', 'success');
     }, error => {
         const messages = { 1: 'Location access was denied. Allow permission for this site in browser settings.', 2: 'Your device could not determine its location. You can select a point on the map manually.', 3: 'Location lookup timed out. You can select a point on the map manually.' };
         showToast(messages[error.code] || 'Location access is unavailable. You can select a point on the map manually.', 'error');
@@ -606,12 +660,21 @@ function useCustomerLocation() {
         const longitudeField = document.getElementById('customerLongitude');
         if (latitudeField) latitudeField.value = latitude.toFixed(7);
         if (longitudeField) longitudeField.value = longitude.toFixed(7);
+        if (ML_BACKEND.user) {
+            ML_BACKEND.user.latitude = latitude;
+            ML_BACKEND.user.longitude = longitude;
+        }
+        customerCoordinates = { latitude, longitude };
         const locationField = document.getElementById('customerLocation');
         if (locationField) locationField.placeholder = 'Finding your address...';
         fetch((window.ML_MAP_REVERSE_URL || 'https://nominatim.openstreetmap.org/reverse') + '?format=jsonv2&lat=' + encodeURIComponent(latitude) + '&lon=' + encodeURIComponent(longitude) + '&zoom=18&addressdetails=1', { headers: { Accept: 'application/json' } })
             .then(response => response.ok ? response.json() : Promise.reject(new Error('Address lookup failed.')))
             .then(result => { if (locationField && result.display_name) locationField.value = result.display_name; if (locationField) locationField.placeholder = 'Enter your area or address'; })
             .catch(() => { if (locationField) locationField.placeholder = 'Enter your area or address'; });
+        const productSort = document.getElementById('sortProductsSelect');
+        if (productSort) productSort.value = 'near';
+        renderMarkets();
+        if (typeof applyProductFilters === 'function') applyProductFilters();
         showToast('Your location was captured. Save your profile to use it for nearby markets.', 'success');
     }, error => {
         const messages = { 1: 'Location access was denied. Allow permission for this site in browser settings.', 2: 'Your device could not determine its location. You can select a point on the map manually.', 3: 'Location lookup timed out. You can select a point on the map manually.' };
@@ -1059,15 +1122,17 @@ function renderQuickReplies() {
 }
 function toggleAIChat() {
     const el = document.getElementById('aiChatWindow');
+    if (!el) return;
     el.style.display = el.style.display === 'flex' ? 'none' : 'flex';
     const body = document.getElementById('aiChatMessages'); if (body) body.scrollTop = body.scrollHeight;
 }
 async function sendAIMessage(preset) {
     const input = document.getElementById('aiInput');
-    const text = (preset || input.value).trim(); if (!text) return;
+    const text = (preset || input?.value || '').trim(); if (!text) return;
     const chat = document.getElementById('aiChatMessages');
+    if (!chat) return;
     chat.innerHTML += `<div class="chat-msg user align-self-end">${escapeHTML(text)}</div>`;
-    input.value = '';
+    if (input) input.value = '';
     chat.scrollTop = chat.scrollHeight;
     const pending = document.createElement('div');
     pending.className = 'chat-msg bot';
@@ -1086,7 +1151,10 @@ async function sendAIMessage(preset) {
             body: JSON.stringify({ message: text })
         });
         const payload = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(payload.message || 'The assistant is temporarily unavailable.');
+        if (!response.ok) {
+            pending.textContent = payload.reply || payload.message || 'The assistant is temporarily unavailable. Browse the product and market listings for the freshest local picks near you.';
+            return;
+        }
         if (!payload.reply) throw new Error('The AI assistant returned an empty response.');
         pending.textContent = payload.reply;
     } catch (error) {

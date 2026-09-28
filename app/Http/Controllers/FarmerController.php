@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreProductRequest;
+use App\Mail\OrderAcceptedMail;
 use App\Models\Category;
 use App\Models\Farmer;
 use App\Models\FarmerMarketChangeRequest;
@@ -12,6 +13,7 @@ use App\Models\Product;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 class FarmerController extends Controller
@@ -220,6 +222,10 @@ class FarmerController extends Controller
         ])['status'];
 
         $order->update(['status' => $status]);
+
+        if ($status === 'Accepted' && $order->user) {
+            Mail::to($order->user->email)->send(new OrderAcceptedMail($order->load('user')));
+        }
 
         return back()->with('status', "Order {$order->order_number} marked as {$status}.");
     }

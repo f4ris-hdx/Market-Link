@@ -20,7 +20,7 @@
             <div class="d-flex align-items-center gap-2 flex-wrap nav-actions">
                 @if($currentUser?->isCustomer())
                     <a class="nav-icon-btn position-relative" href="{{ route('cart.index') }}" title="Shopping cart"><i class="fa-solid fa-basket-shopping"></i>@php($cartCount = collect(session('cart', []))->sum())@if($cartCount > 0)<span class="cart-badge">{{ $cartCount }}</span>@endif</a>
-                    <a class="btn btn-eco-primary btn-sm px-3 my-portal-btn" href="{{ route('dashboard') }}"><i class="fa-solid fa-user-circle me-1"></i>My Portal</a>
+                    <button type="button" class="nav-icon-btn" onclick="openNotificationsModal()" title="Notifications"><i class="fa-regular fa-bell"></i></button>
                 @elseif($currentUser?->isFarmer())
                     <a class="btn btn-eco-primary btn-sm px-3 my-portal-btn" href="{{ route('farmer.dashboard') }}"><i class="fa-solid fa-tractor me-1"></i>Farmer Portal</a>
                 @elseif($currentUser?->isAdmin())
@@ -32,12 +32,12 @@
 
                 @if($currentUser)
                     <div class="dropdown">
-                        <button class="btn btn-outline-light btn-sm rounded-pill px-3 dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button class="btn btn-eco-primary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fa-solid fa-circle-user"></i>{{ $currentUser->name }}
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><span class="dropdown-item-text small text-muted">{{ ucfirst($currentUser->role) }} account</span></li>
-                            <li><a class="dropdown-item" href="{{ $currentUser->isFarmer() ? route('farmer.dashboard') : ($currentUser->isAdmin() ? route('admin.dashboard') : route('dashboard')) }}"><i class="fa-solid fa-gauge-high me-2"></i>{{ $currentUser->isFarmer() ? 'Farmer Portal' : ($currentUser->isAdmin() ? 'Admin Portal' : 'My Portal') }}</a></li>
+                            <li><a class="dropdown-item" href="{{ $currentUser->isFarmer() ? route('farmer.dashboard') : ($currentUser->isAdmin() ? route('admin.dashboard') : route('dashboard')) }}"><i class="fa-solid fa-gauge-high me-2"></i>{{ $currentUser->isFarmer() ? 'Farmer Dashboard' : ($currentUser->isAdmin() ? 'Admin Dashboard' : 'Dashboard') }}</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form method="POST" action="{{ route('logout') }}">

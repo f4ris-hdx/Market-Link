@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\FarmerAccountApprovedMail;
 use App\Models\Announcement;
 use App\Models\Category;
 use App\Models\Farmer;
@@ -15,6 +16,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 class AdminController extends Controller
@@ -298,6 +300,10 @@ class AdminController extends Controller
     {
         $farmer->update(['status' => 'verified']);
         $farmer->user?->update(['status' => 'active']);
+
+        if ($farmer->user) {
+            Mail::to($farmer->user->email)->send(new FarmerAccountApprovedMail($farmer->load('user')));
+        }
 
         return back()->with('status', "{$farmer->name} verified.");
     }

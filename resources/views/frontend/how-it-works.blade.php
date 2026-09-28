@@ -70,9 +70,6 @@
                     <button class="nav-icon-btn id-customer-action" onclick="openNotificationsModal()" title="Notifications">
                         <i class="fa-regular fa-bell"></i>
                     </button>
-                    <a class="btn btn-eco-primary btn-sm px-3 id-customer-action my-portal-btn" href="{{ auth()->check() ? (auth()->user()->isFarmer() ? route('farmer.dashboard') : (auth()->user()->isAdmin() ? route('admin.dashboard') : route('dashboard'))) : route('login') }}">
-                        <i class="fa-solid fa-user-circle me-1"></i> My Portal
-                    </a>
                 </div>
             </div>
         </div>
@@ -93,7 +90,7 @@
             <div class="col-md-3 reveal">
                 <div class="eco-card p-4 h-100 step-card">
                     <span class="step-num">1</span>
-                    <div class="display-6 text-fresh mb-3 mt-2"><i class="fa-solid fa-magnifying-glass-location"></i></div>
+                    <div class="display-6 text-fresh mb-3 mt-2"><i class="fa-solid fa-location-dot"></i></div>
                     <h5 class="fw-bold">Find a Market</h5>
                     <p class="text-muted small mb-0">Browse the directory to locate your nearest weekend or weekday market.</p>
                 </div>
@@ -109,7 +106,7 @@
             <div class="col-md-3 reveal" style="transition-delay:.14s">
                 <div class="eco-card p-4 h-100 step-card">
                     <span class="step-num">3</span>
-                    <div class="display-6 text-fresh mb-3 mt-2"><i class="fa-solid fa-clock-check"></i></div>
+                    <div class="display-6 text-fresh mb-3 mt-2"><i class="fa-solid fa-clock"></i></div>
                     <h5 class="fw-bold">Select Pickup Window</h5>
                     <p class="text-muted small mb-0">Reserve a time slot at the stall so your basket is ready when you arrive.</p>
                 </div>
@@ -362,7 +359,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>window.ML_BACKEND = @json($frontendData ?? []); window.ML_URLS = { home: @json(route('home')), products: @json(route('products.index')), markets: @json(route('markets.index')), farmers: @json(route('farmers.index')), dashboard: @json(route('dashboard')), login: @json(route('login')), cartAdd: @json(url('/cart/add')), cartUpdate: @json(route('cart.update')), cartRemove: @json(url('/cart/remove')), favorites: @json(url('/favorites')), checkout: @json(route('checkout.place')), profile: @json(route('dashboard.profile')), farmerDashboard: @json(route('farmer.dashboard')), adminDashboard: @json(route('admin.dashboard')) };</script>
+    <!-- <script>window.ML_BACKEND = @json($frontendData ?? []); window.ML_URLS = { home: @json(route('home')), products: @json(route('products.index')), markets: @json(route('markets.index')), farmers: @json(route('farmers.index')), dashboard: @json(route('dashboard')), login: @json(route('login')), cartAdd: @json(url('/cart/add')), cartUpdate: @json(route('cart.update')), cartRemove: @json(url('/cart/remove')), favorites: @json(url('/favorites')), checkout: @json(route('checkout.place')), profile: @json(route('dashboard.profile')), farmerDashboard: @json(route('farmer.dashboard')), adminDashboard: @json(route('admin.dashboard')) };</script> -->
     <script src="{{ asset('js/app.js') }}"></script>
     <script>
         initGlobalUI();

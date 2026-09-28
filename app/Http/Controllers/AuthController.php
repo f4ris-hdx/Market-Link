@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
+use App\Mail\WelcomeUserMail;
 use App\Models\Farmer;
 use App\Models\Market;
 use App\Models\User;
@@ -11,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 class AuthController extends Controller
@@ -54,6 +56,8 @@ class AuthController extends Controller
 
             return $user;
         });
+
+        Mail::to($user->email)->send(new WelcomeUserMail($user));
 
         Auth::login($user);
         $request->session()->regenerate();

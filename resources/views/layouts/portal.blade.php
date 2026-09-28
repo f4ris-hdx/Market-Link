@@ -25,7 +25,6 @@
             </ul>
             <div class="d-flex align-items-center gap-2 nav-actions">
                 <a class="nav-icon-btn position-relative" href="{{ route('cart.index') }}" title="Shopping cart"><i class="fa-solid fa-cart-shopping"></i>@php($cartCount = collect(session('cart', []))->sum())@if($cartCount>0)<span class="cart-badge">{{ $cartCount }}</span>@endif</a>
-                <a class="btn btn-eco-primary btn-sm px-3 my-portal-btn" href="{{ route('dashboard') }}"><i class="fa-solid fa-user-circle me-1"></i>My Portal</a>
                 <div class="dropdown">
                     <button class="btn btn-outline-light dropdown-toggle rounded-pill btn-sm px-3" data-bs-toggle="dropdown" type="button"><i class="fa-solid fa-user-gear me-1"></i>{{ auth()->user()->name }}</button>
                     <ul class="dropdown-menu dropdown-menu-end shadow border-0">

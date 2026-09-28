@@ -15,17 +15,37 @@ class MarketAssistant
 {
     public function answer(string $message): string
     {
-        if (blank(config('services.gemini.key'))) {
-            throw new AssistantUnavailableException('The AI assistant is offline because no Gemini API key is configured.');
-        }
-
         $context = $this->databaseContext();
+
+        if (blank(config('services.gemini.key'))) {
+            return $this->fallbackReply($message, $context, 'The AI assistant is offline because no Gemini API key is configured.');
+        }
 
         try {
             return $this->askGemini($message, $context);
         } catch (ConnectionException|RequestException $exception) {
-            throw new AssistantUnavailableException('The AI assistant is offline or could not be reached. Please try again later.', previous: $exception);
+            return $this->fallbackReply($message, $context, 'The AI assistant is temporarily offline. Here are the freshest options available right now.');
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    private function fallbackReply(string $message, array $context, string $status): string
+    {
+        $products = collect($context['products'] ?? [])->take(3);
+        $markets = collect($context['markets'] ?? [])->take(3);
+        $productNames = $products->pluck('name')->filter()->implode(', ');
+        $marketNames = $markets->pluck('name')->filter()->implode(', ');
+
+        $parts = [
+            $status,
+            'Based on the current MarketLink catalog, the freshest options are '.($productNames !== '' ? $productNames : 'seasonal farm produce').'.',
+            $marketNames !== '' ? 'Common pickup hubs right now include '.$marketNames.'.' : '',
+            'You can browse the products and markets pages to filter by what is closest to you.',
+        ];
+
+        return trim(implode(' ', array_filter($parts)));
     }
 
     /**
